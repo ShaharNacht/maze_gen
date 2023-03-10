@@ -101,17 +101,28 @@ impl Ui
 #[derive( Clone, Copy, PartialEq, Eq, PartialOrd, Ord )]
 pub enum ButtonType
 {
-	Reset,
 	Step,
-	PlayOrPause,
-	Finish
+	AutoStepOrPause,
+	Finish,
+	Reset,
 }
 
 impl ButtonType
 {
 	fn all() -> &'static [ButtonType]
 	{
-		&[ ButtonType::Reset, ButtonType::Step, ButtonType::PlayOrPause, ButtonType::Finish ]
+		&[ ButtonType::Step, ButtonType::AutoStepOrPause, ButtonType::Finish, ButtonType::Reset ]
+	}
+	
+	fn text(&self) -> ( &str, Option<&str> )
+	{
+		match self
+		{
+			ButtonType::Step => ( "Step", None ),
+			ButtonType::AutoStepOrPause => ( "Auto-Step", Some("Pause") ),
+			ButtonType::Finish => ( "Finish", None ),
+			ButtonType::Reset => ( "Reset", None )
+		}
 	}
 }
 
@@ -132,6 +143,11 @@ impl Button
 	fn new( button_type: ButtonType, position: WindowPoint, width: i64, height: i64 ) -> Self
 	{
 		Self { button_type, position, width, height, highlight: 0.0, is_pressed: false }
+	}
+	
+	pub fn text(&self) -> ( &str, Option<&str> )
+	{
+		self.button_type.text()
 	}
 	
 	fn is_point_inside( &self, point: WindowPoint ) -> bool

@@ -1,13 +1,14 @@
 use sdl2::pixels::Color;
+use sdl2::rect::Rect;
 use sdl2::ttf::{ Sdl2TtfContext, Font };
 use sdl2::video::WindowContext;
-use sdl2::render::{ Canvas, WindowCanvas, TextureCreator, RenderTarget };
+use sdl2::render::{ Canvas, WindowCanvas, TextureCreator, RenderTarget, TextureQuery };
 
-use crate::str_err::Result;
+use crate::str_err::{ Result, StrErr };
 use crate::ui::Ui;
 use crate::maze::Maze;
 use crate::point::{ WindowPoint, Convert };
-use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
+use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
 
 pub struct Graphics<'ttf>
 {
@@ -76,6 +77,17 @@ impl<'ttf> Graphics<'ttf>
 			}
 			
 			canvas.fill_rect(rect)?;
+			
+			let text = button.text();
+			
+			let text_surface = self.font.render(text.0)
+				.blended(UI_BUTTON_TEXT_COLOR).str_err()?;
+			let text_texture = self.texture_creator.create_texture_from_surface(text_surface).str_err()?;
+			let TextureQuery { width: text_width, height: text_height, .. } = text_texture.query();
+			let text_center = ( ( button.position.x + button.width/2 ) as _, ( button.position.y + button.height/2 ) as _ );
+			let text_rect = Rect::from_center( text_center, text_width, text_height );
+			
+			canvas.copy( &text_texture, None, text_rect )?;
 		}
 		
 		Ok(())

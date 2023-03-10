@@ -43,6 +43,7 @@ const UI_COLOR: Color = Color::RGB( 0x34, 0x4B, 0x68 );
 const UI_BUTTON_COLOR: Color = Color::RGB( 0x53, 0x78, 0xA7 );
 const UI_BUTTON_HIGHLIGHT_COLOR: Color = Color::RGB( 0x81, 0xC0, 0xC6 );
 const UI_BUTTON_CLICKED_COLOR: Color = Color::RGB( 0x43, 0x61, 0x87 );
+const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
 fn main() -> Result<()>
 {
