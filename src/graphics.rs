@@ -7,8 +7,8 @@ use sdl2::render::{ Canvas, WindowCanvas, TextureCreator, RenderTarget, TextureQ
 use crate::str_err::{ Result, StrErr };
 use crate::ui::Ui;
 use crate::maze::Maze;
-use crate::point::{ WindowPoint, Convert };
-use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
+use crate::point::{ WindowPoint, Convert, MazePoint };
+use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, CURSOR_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
 
 pub struct Graphics<'ttf>
 {
@@ -52,6 +52,17 @@ impl<'ttf> Graphics<'ttf>
 			canvas.draw_line( p3, p2 )?;
 		}
 		
+		if let Some(cursor) = maze.cursor()
+		{
+			let cursor_window = cursor.convert(maze);
+			let cell_width = self.cell_width(maze);
+			let cell_height = self.cell_height(maze);
+			
+			let rect = Rect::new( ( cursor_window.x + cell_width/4 ) as _, ( cursor_window.y + cell_height/4 ) as _, ( cell_width / 2 ) as _, ( cell_height / 2 ) as _ );
+			canvas.set_draw_color(CURSOR_COLOR);
+			canvas.fill_rect(rect)?;
+		}
+		
 		Ok(())
 	}
 	
@@ -91,6 +102,22 @@ impl<'ttf> Graphics<'ttf>
 		}
 		
 		Ok(())
+	}
+	
+	fn cell_width( &self, maze: &Maze ) -> i64
+	{
+		let p1 = MazePoint::new( 0, 0 ).convert(maze);
+		let p2 = MazePoint::new( 1, 0 ).convert(maze);
+		
+		( p2 - p1 ).x
+	}
+	
+	fn cell_height( &self, maze: &Maze ) -> i64
+	{
+		let p1 = MazePoint::new( 0, 0 ).convert(maze);
+		let p2 = MazePoint::new( 0, 1 ).convert(maze);
+		
+		( p2 - p1 ).y
 	}
 	
 	fn blend_colors( color1: impl Into<Color>, color2: impl Into<Color>, factor: f64 ) -> Color

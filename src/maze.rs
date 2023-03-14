@@ -1,16 +1,27 @@
+use rand::thread_rng;
+use rand::rngs::ThreadRng;
+use rand::seq::SliceRandom;
+
 use crate::point::MazePoint;
 
 pub struct Maze
 {
 	width: i64,
-	height: i64
+	height: i64,
+	path: Vec<MazePoint>,
+	
+	rng: ThreadRng
 }
 
 impl Maze
 {
 	pub fn new( width: i64, height: i64 ) -> Self
 	{
-		Self { width, height }
+		let rng = thread_rng();
+		
+		let path = vec![ MazePoint::new( 0, 0 ) ];
+		
+		Self { width, height, path, rng }
 	}
 	
 	pub fn width(&self) -> i64
@@ -23,8 +34,28 @@ impl Maze
 		self.height
 	}
 	
+	pub fn step(&mut self)
+	{
+		if let Some(cursor) = self.cursor()
+		{
+			let directions = [
+				( -1,  0 ),
+				(  1,  0 ),
+				(  0, -1 ),
+				(  0,  1 )
+			];
+			
+			self.path.push( cursor + *directions.choose(&mut self.rng).unwrap() );
+		}
+	}
+	
 	pub fn all_points(&self) -> impl Iterator< Item = MazePoint > + '_
 	{
 		( 0 .. self.height ).flat_map( |y| ( 0 .. self.width ).map( move |x| MazePoint::new( x, y ) ) )
+	}
+	
+	pub fn cursor(&self) -> Option<MazePoint>
+	{
+		self.path.last().copied()
 	}
 }
