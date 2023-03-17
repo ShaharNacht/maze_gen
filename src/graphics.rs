@@ -106,16 +106,22 @@ impl<'ttf> Graphics<'ttf>
 	
 	fn cell_width( &self, maze: &Maze ) -> i64
 	{
-		let p1 = MazePoint::new( 0, 0 ).convert(maze);
-		let p2 = MazePoint::new( 1, 0 ).convert(maze);
+		let p1 = MazePoint::new( 0, 0 );
+		let p2 = p1 + ( 1, 0 );
+		
+		let p1: WindowPoint = p1.convert(maze);
+		let p2: WindowPoint = p2.convert(maze);
 		
 		( p2 - p1 ).x
 	}
 	
 	fn cell_height( &self, maze: &Maze ) -> i64
 	{
-		let p1 = MazePoint::new( 0, 0 ).convert(maze);
-		let p2 = MazePoint::new( 0, 1 ).convert(maze);
+		let p1 = MazePoint::new( 0, 0 );
+		let p2 = p1 + ( 0, 1 );
+		
+		let p1 = p1.convert(maze);
+		let p2 = p2.convert(maze);
 		
 		( p2 - p1 ).y
 	}
