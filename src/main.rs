@@ -50,7 +50,7 @@ fn main() -> Result<()>
 {
 	let mut manager = Manager::new( "Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32 )?;
 	
-	let maze = Maze::new( MAZE_WIDTH, MAZE_HEIGHT );
+	let mut maze = Maze::new( MAZE_WIDTH, MAZE_HEIGHT );
 	let mut ui = Ui::new();
 	
 	let ttf_ctx = sdl2::ttf::init().str_err()?;
@@ -78,7 +78,7 @@ fn main() -> Result<()>
 		let mouse_state = event_pump.mouse_state();
 		let mouse = WindowPoint::new( mouse_state.x() as i64, mouse_state.y() as i64 );
 		let mouse_pressed = mouse_state.is_mouse_button_pressed(sdl2::mouse::MouseButton::Left);
-		ui.update( mouse, mouse_pressed );
+		ui.update( mouse, mouse_pressed, &mut maze );
 		
 		graphics.draw( canvas, &maze, &ui )?;
 		canvas.present();

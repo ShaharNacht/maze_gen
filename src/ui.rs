@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::maze::Maze;
 use crate::point::WindowPoint;
 use crate::{ GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT, GFX_UI_PADDING };
 
@@ -41,7 +42,7 @@ impl Ui
 		Self { mouse, mouse_pressed, mouse_pressed_prev, button_count, buttons, pressed_button: None }
 	}
 	
-	pub fn update( &mut self, mouse: WindowPoint, mouse_pressed: bool )
+	pub fn update( &mut self, mouse: WindowPoint, mouse_pressed: bool, maze: &mut Maze )
 	{
 		self.mouse = mouse;
 		self.mouse_pressed = mouse_pressed;
@@ -51,8 +52,14 @@ impl Ui
 			if let Some(pressed_button) = self.pressed_button
 			{
 				let button = self.buttons.get_mut(&pressed_button).unwrap();
+				
 				button.is_pressed = false;
 				button.highlight = 0.0;
+				
+				if button.is_point_inside(self.mouse)
+				{
+					self.click( pressed_button, maze );
+				}
 				
 				self.pressed_button = None;
 			}
@@ -95,6 +102,16 @@ impl Ui
 	pub fn buttons(&self) -> impl Iterator< Item = &Button >
 	{
 		self.buttons.values()
+	}
+	
+	fn click( &self, button_type: ButtonType, maze: &mut Maze )
+	{
+		match button_type
+		{
+			ButtonType::Step => maze.step(),
+			
+			_ => {}
+		}
 	}
 }
 

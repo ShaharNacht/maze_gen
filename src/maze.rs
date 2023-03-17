@@ -38,14 +38,16 @@ impl Maze
 	{
 		if let Some(cursor) = self.cursor()
 		{
-			let directions = [
+			const DIRECTIONS: [ ( i64, i64 ); 4 ] = [
 				( -1,  0 ),
 				(  1,  0 ),
 				(  0, -1 ),
 				(  0,  1 )
 			];
 			
-			self.path.push( cursor + *directions.choose(&mut self.rng).unwrap() );
+			let direction = *DIRECTIONS.choose(&mut self.rng).unwrap();
+			
+			self.path.push( cursor + direction );
 		}
 	}
 	
