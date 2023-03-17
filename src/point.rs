@@ -3,7 +3,7 @@ use std::ops::{ Add, Sub, Mul, Div };
 use crate::maze::Maze;
 use crate::{ GFX_MAZE_X, GFX_MAZE_Y, GFX_MAZE_WIDTH, GFX_MAZE_HEIGHT };
 
-#[derive( Clone, Copy, PartialEq, Eq )]
+#[derive( Clone, Copy, PartialEq, Eq, Hash )]
 pub struct MazePoint
 {
 	pub x: i64,

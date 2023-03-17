@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use rand::thread_rng;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
@@ -10,6 +12,7 @@ pub struct Maze
 	height: i64,
 	
 	path: Vec<MazePoint>,
+	visited: HashSet<MazePoint>,
 	
 	rng: ThreadRng
 }
@@ -18,11 +21,16 @@ impl Maze
 {
 	pub fn new( width: i64, height: i64 ) -> Self
 	{
+		let start_point = MazePoint::new( 0, 0 );
+		
+		let path = vec![start_point];
+		
+		let mut visited = HashSet::new();
+		visited.insert(start_point);
+		
 		let rng = thread_rng();
 		
-		let path = vec![ MazePoint::new( 0, 0 ) ];
-		
-		Self { width, height, path, rng }
+		Self { width, height, path, visited, rng }
 	}
 	
 	pub fn width(&self) -> i64
@@ -55,6 +63,7 @@ impl Maze
 			if let Some(&step) = step
 			{
 				self.path.push(step);
+				self.visited.insert(step);
 			}
 		}
 	}
@@ -67,6 +76,11 @@ impl Maze
 	pub fn cursor(&self) -> Option<MazePoint>
 	{
 		self.path.last().copied()
+	}
+	
+	pub fn is_visited( &self, point: MazePoint ) -> bool
+	{
+		self.visited.contains(&point)
 	}
 	
 	fn is_point_inside( &self, point: MazePoint ) -> bool

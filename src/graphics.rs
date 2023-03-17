@@ -8,7 +8,7 @@ use crate::str_err::{ Result, StrErr };
 use crate::ui::Ui;
 use crate::maze::Maze;
 use crate::point::{ WindowPoint, Convert, MazePoint };
-use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, CURSOR_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
+use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, CURSOR_COLOR, VISITED_CELL_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
 
 pub struct Graphics<'ttf>
 {
@@ -40,16 +40,30 @@ impl<'ttf> Graphics<'ttf>
 	
 	fn draw_maze< T: RenderTarget >( &self, canvas: &mut Canvas<T>, maze: &Maze ) -> Result<()>
 	{
-		canvas.set_draw_color(WALL_COLOR);
-		
+		canvas.set_draw_color(VISITED_CELL_COLOR);
 		for point in maze.all_points()
 		{
-			let p1: WindowPoint = ( point + ( 1, 0 ) ).convert(maze);
-			let p2: WindowPoint = ( point + ( 1, 1 ) ).convert(maze);
-			let p3: WindowPoint = ( point + ( 0, 1 ) ).convert(maze);
+			if maze.is_visited(point)
+			{
+				let window_point = ( point + ( 0, 0 ) ).convert(maze);
+				
+				let cell_width = self.cell_width(maze);
+				let cell_height = self.cell_height(maze);
+				
+				let rect = Rect::new( window_point.x as _, window_point.y as _, cell_width as _, cell_height as _ );
+				canvas.fill_rect(rect)?;
+			}
+		}
+		
+		canvas.set_draw_color(WALL_COLOR);
+		for point in maze.all_points()
+		{
+			let top_right =    ( point + ( 1, 0 ) ).convert(maze);
+			let bottom_left =  ( point + ( 0, 1 ) ).convert(maze);
+			let bottom_right = ( point + ( 1, 1 ) ).convert(maze);
 			
-			canvas.draw_line( p1, p2 )?;
-			canvas.draw_line( p3, p2 )?;
+			canvas.draw_line( top_right, bottom_right )?;
+			canvas.draw_line( bottom_left, bottom_right )?;
 		}
 		
 		if let Some(cursor) = maze.cursor()
@@ -68,23 +82,21 @@ impl<'ttf> Graphics<'ttf>
 	
 	fn draw_ui< T: RenderTarget >( &self, canvas: &mut Canvas<T>, ui: &Ui ) -> Result<()>
 	{
-		let rect = ( GFX_UI_X as _, GFX_UI_Y as _, GFX_UI_WIDTH as _, GFX_UI_HEIGHT as _ );
-		let rect = Some( rect.into() );
+		let rect = Rect::new( GFX_UI_X as _, GFX_UI_Y as _, GFX_UI_WIDTH as _, GFX_UI_HEIGHT as _ );
 		canvas.set_draw_color(UI_COLOR);
 		canvas.fill_rect(rect)?;
 		
 		for button in ui.buttons()
 		{
-			let rect = ( button.position.x as _, button.position.y as _, button.width as _, button.height as _ );
-			let rect = Some( rect.into() );
+			let rect = Rect::new( button.position.x as _, button.position.y as _, button.width as _, button.height as _ );
 			
-			if !button.is_pressed
+			if button.is_pressed
 			{
-				canvas.set_draw_color( Self::blend_colors( UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, button.highlight ) );
+				canvas.set_draw_color(UI_BUTTON_CLICKED_COLOR);
 			}
 			else
 			{
-				canvas.set_draw_color(UI_BUTTON_CLICKED_COLOR);
+				canvas.set_draw_color( Self::blend_colors( UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, button.highlight ) );
 			}
 			
 			canvas.fill_rect(rect)?;

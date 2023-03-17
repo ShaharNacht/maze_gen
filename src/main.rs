@@ -40,6 +40,7 @@ const FONT_SIZE: u16 = 32;
 const BACKGROUND_COLOR: Color = Color::RGB( 0x28, 0x24, 0x2E );
 const WALL_COLOR: Color = Color::RGB( 0xFF, 0xFB, 0xDE );
 const CURSOR_COLOR: Color = Color::RGB( 0xBD, 0x51, 0x6D );
+const VISITED_CELL_COLOR: Color = Color::RGB( 0x6F, 0x9D, 0x81 );
 const UI_COLOR: Color = Color::RGB( 0x34, 0x4B, 0x68 );
 const UI_BUTTON_COLOR: Color = Color::RGB( 0x53, 0x78, 0xA7 );
 const UI_BUTTON_HIGHLIGHT_COLOR: Color = Color::RGB( 0x81, 0xC0, 0xC6 );
