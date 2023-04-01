@@ -45,8 +45,7 @@ impl<'ttf> Graphics<'ttf>
 		{
 			if maze.is_visited(point)
 			{
-				let window_point = ( point + ( 0, 0 ) ).convert(maze);
-				
+				let window_point: WindowPoint = point.convert(maze);
 				let cell_width = self.cell_width(maze);
 				let cell_height = self.cell_height(maze);
 				
@@ -56,19 +55,29 @@ impl<'ttf> Graphics<'ttf>
 		}
 		
 		canvas.set_draw_color(WALL_COLOR);
-		for point in maze.all_points()
+		for wall in maze.walls()
 		{
-			let top_right =    ( point + ( 1, 0 ) ).convert(maze);
-			let bottom_left =  ( point + ( 0, 1 ) ).convert(maze);
-			let bottom_right = ( point + ( 1, 1 ) ).convert(maze);
+			let horizontal = wall.0.x != wall.1.x;
+			let p1: WindowPoint;
+			let p2: WindowPoint;
 			
-			canvas.draw_line( top_right, bottom_right )?;
-			canvas.draw_line( bottom_left, bottom_right )?;
+			if horizontal
+			{
+				p1 = wall.1.convert(maze);
+				p2 = ( wall.1 + ( 0, 1 ) ).convert(maze);
+			}
+			else
+			{
+				p1 = wall.1.convert(maze);
+				p2 = ( wall.1 + ( 1, 0 ) ).convert(maze);
+			}
+			
+			canvas.draw_line( p1, p2 )?;
 		}
 		
 		if let Some(cursor) = maze.cursor()
 		{
-			let cursor_window = cursor.convert(maze);
+			let cursor_window: WindowPoint = cursor.convert(maze);
 			let cell_width = self.cell_width(maze);
 			let cell_height = self.cell_height(maze);
 			
@@ -132,8 +141,8 @@ impl<'ttf> Graphics<'ttf>
 		let p1 = MazePoint::new( 0, 0 );
 		let p2 = p1 + ( 0, 1 );
 		
-		let p1 = p1.convert(maze);
-		let p2 = p2.convert(maze);
+		let p1: WindowPoint = p1.convert(maze);
+		let p2: WindowPoint = p2.convert(maze);
 		
 		( p2 - p1 ).y
 	}

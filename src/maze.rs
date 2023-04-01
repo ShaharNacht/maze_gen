@@ -52,21 +52,24 @@ impl Maze
 	{
 		if let Some(cursor) = self.cursor()
 		{
-			const DIRECTIONS: [ ( i64, i64 ); 4 ] = [
+			const DIRECTIONS: [ (i64,i64); 4 ] = [
 				( -1,  0 ),
 				(  1,  0 ),
 				(  0, -1 ),
 				(  0,  1 )
 			];
 			
-			let possible_steps: Vec<MazePoint> = DIRECTIONS.into_iter().map( |dir| cursor + dir )
+			let possible_steps: Vec<MazePoint> = DIRECTIONS.into_iter()
+				.map( |dir| cursor + dir )
 				.filter( |&step| self.is_point_inside(step) )
 				.collect();
 			
-			let step = possible_steps.choose(&mut self.rng);
-			
-			if let Some(&step) = step
+			if !possible_steps.is_empty()
 			{
+				let step = *possible_steps.choose(&mut self.rng).unwrap();
+				
+				self.walls.remove( &Wall::new( cursor, step ).unwrap() );
+				
 				self.path.push(step);
 				self.visited.insert(step);
 			}
@@ -88,6 +91,11 @@ impl Maze
 		self.visited.contains(&point)
 	}
 	
+	pub fn walls(&self) -> impl Iterator< Item = &Wall >
+	{
+		self.walls.iter()
+	}
+	
 	fn is_point_inside( &self, point: MazePoint ) -> bool
 	{
 		point.x >= 0 &&
@@ -98,16 +106,23 @@ impl Maze
 	
 	fn fill_all_walls( walls: &mut HashSet<Wall>, width: i64, height: i64 )
 	{
-		for y in 0 .. height - 1
+		for y in 0 .. height
 		{
-			for x in 0 .. width - 1
+			for x in 0 .. width
 			{
 				let current = MazePoint::new( x, y );
 				let right = current + ( 1, 0 );
 				let down = current + ( 0, 1 );
 				
-				walls.insert( Wall::new( current, right ).unwrap() );
-				walls.insert( Wall::new( current, down ).unwrap() );
+				if right.x < width
+				{
+					walls.insert( Wall::new( current, right ).unwrap() );
+				}
+				
+				if down.y < height
+				{
+					walls.insert( Wall::new( current, down ).unwrap() );
+				}
 			}
 		}
 	}
@@ -119,7 +134,7 @@ impl Maze
 /// and that the internal order of the cells doesn't depend on the provided order,
 /// so that equality checks and hashes don't depend the order.
 #[derive( PartialEq, Eq, Hash )]
-struct Wall( MazePoint, MazePoint );
+pub struct Wall( pub MazePoint, pub MazePoint );
 
 impl Wall
 {
