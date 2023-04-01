@@ -49,15 +49,15 @@ const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
 fn main() -> Result<()>
 {
-	let mut manager = Manager::new( "Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32 )?;
+	let mut ctx = Context::new( "Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32 )?;
 	
 	let mut maze = Maze::new( MAZE_WIDTH, MAZE_HEIGHT );
 	let mut ui = Ui::new();
 	
 	let ttf_ctx = sdl2::ttf::init().str_err()?;
-	let graphics = Graphics::new( &ttf_ctx, &manager.canvas )?;
+	let graphics = Graphics::new( &ttf_ctx, &ctx.canvas )?;
 	
-	manager.main_loop( | event_pump, canvas |
+	ctx.main_loop( | event_pump, canvas |
 	{
 		for event in event_pump.poll_iter()
 		{
@@ -92,14 +92,14 @@ fn main() -> Result<()>
 	Ok(())
 }
 
-pub struct Manager
+pub struct Context
 {
 	sdl_ctx: sdl2::Sdl,
 	video_subsystem: sdl2::VideoSubsystem,
 	canvas: sdl2::render::WindowCanvas
 }
 
-impl Manager
+impl Context
 {
 	pub fn new( window_title: &str, window_width: u32, window_height: u32 ) -> Result<Self>
 	{
