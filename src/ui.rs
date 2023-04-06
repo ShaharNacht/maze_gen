@@ -10,9 +10,8 @@ pub struct Ui
 	mouse_pressed: bool,
 	mouse_pressed_prev: bool,
 	
-	button_count: i64,
-	buttons: BTreeMap< ButtonType, Button >,
-	pressed_button: Option<ButtonType>
+	buttons: BTreeMap< ButtonId, Button >,
+	pressed_button_id: Option<ButtonId>
 }
 
 impl Ui
@@ -23,23 +22,23 @@ impl Ui
 		let mouse_pressed = false;
 		let mouse_pressed_prev = false;
 		
-		let button_count = ButtonType::all().len() as i64;
+		let button_count = ButtonId::all().len() as i64;
 		let button_width = ( GFX_UI_WIDTH - GFX_UI_PADDING - button_count * GFX_UI_PADDING ) / button_count;
 		let button_height = GFX_UI_HEIGHT - GFX_UI_PADDING * 2;
 		
 		let mut buttons = BTreeMap::new();
 		
-		for ( i, button_type ) in ButtonType::all().iter().copied().enumerate()
+		for ( i, button_id ) in ButtonId::all().iter().copied().enumerate()
 		{
 			let x = GFX_UI_X + GFX_UI_PADDING + ( ( button_width + GFX_UI_PADDING ) * i as i64 );
 			let y = GFX_UI_Y + GFX_UI_PADDING;
 			
-			let button = Button::new( button_type, WindowPoint::new( x, y ), button_width, button_height );
+			let button = Button::new( button_id, WindowPoint::new( x, y ), button_width, button_height );
 			
-			buttons.insert( button_type, button );
+			buttons.insert( button_id, button );
 		}
 		
-		Self { mouse, mouse_pressed, mouse_pressed_prev, button_count, buttons, pressed_button: None }
+		Self { mouse, mouse_pressed, mouse_pressed_prev, buttons, pressed_button_id: None }
 	}
 	
 	pub fn update( &mut self, mouse: WindowPoint, mouse_pressed: bool, maze: &mut Maze )
@@ -49,19 +48,19 @@ impl Ui
 		
 		if !self.mouse_pressed
 		{
-			if let Some(pressed_button) = self.pressed_button
+			if let Some(pressed_button_id) = self.pressed_button_id
 			{
-				let button = self.buttons.get_mut(&pressed_button).unwrap();
+				let button = self.buttons.get_mut(&pressed_button_id).unwrap();
 				
 				button.is_pressed = false;
 				button.highlight = 0.0;
 				
 				if button.is_point_inside(self.mouse)
 				{
-					self.click( pressed_button, maze );
+					self.click( pressed_button_id, maze );
 				}
 				
-				self.pressed_button = None;
+				self.pressed_button_id = None;
 			}
 		}
 		
@@ -71,12 +70,12 @@ impl Ui
 			
 			if mouse_over
 			{
-				if self.pressed_button.is_none()
+				if self.pressed_button_id.is_none()
 				{
 					if self.mouse_pressed && !self.mouse_pressed_prev
 					{
 						button.is_pressed = true;
-						self.pressed_button = Some(button.button_type);
+						self.pressed_button_id = Some(button.button_id);
 					}
 					else
 					{
@@ -104,11 +103,11 @@ impl Ui
 		self.buttons.values()
 	}
 	
-	fn click( &self, button_type: ButtonType, maze: &mut Maze )
+	fn click( &self, button_id: ButtonId, maze: &mut Maze )
 	{
-		match button_type
+		match button_id
 		{
-			ButtonType::Step => maze.step(),
+			ButtonId::Step => maze.step(),
 			
 			_ => {}
 		}
@@ -116,36 +115,36 @@ impl Ui
 }
 
 #[derive( Clone, Copy, PartialEq, Eq, PartialOrd, Ord )]
-pub enum ButtonType
+pub enum ButtonId
 {
 	Step,
 	AutoStepOrPause,
 	Finish,
-	Reset,
+	Reset
 }
 
-impl ButtonType
+impl ButtonId
 {
-	fn all() -> &'static [ButtonType]
+	fn all() -> &'static [ButtonId]
 	{
-		&[ ButtonType::Step, ButtonType::AutoStepOrPause, ButtonType::Finish, ButtonType::Reset ]
+		&[ ButtonId::Step, ButtonId::AutoStepOrPause, ButtonId::Finish, ButtonId::Reset ]
 	}
 	
 	fn text(&self) -> ( &str, Option<&str> )
 	{
 		match self
 		{
-			ButtonType::Step => ( "Step", None ),
-			ButtonType::AutoStepOrPause => ( "Auto-Step", Some("Pause") ),
-			ButtonType::Finish => ( "Finish", None ),
-			ButtonType::Reset => ( "Reset", None )
+			ButtonId::Step => ( "Step", None ),
+			ButtonId::AutoStepOrPause => ( "Auto-Step", Some("Pause") ),
+			ButtonId::Finish => ( "Finish", None ),
+			ButtonId::Reset => ( "Reset", None )
 		}
 	}
 }
 
 pub struct Button
 {
-	pub button_type: ButtonType,
+	pub button_id: ButtonId,
 	
 	pub position: WindowPoint,
 	pub width: i64,
@@ -157,14 +156,14 @@ pub struct Button
 
 impl Button
 {
-	fn new( button_type: ButtonType, position: WindowPoint, width: i64, height: i64 ) -> Self
+	fn new( button_id: ButtonId, position: WindowPoint, width: i64, height: i64 ) -> Self
 	{
-		Self { button_type, position, width, height, highlight: 0.0, is_pressed: false }
+		Self { button_id: button_id, position, width, height, highlight: 0.0, is_pressed: false }
 	}
 	
 	pub fn text(&self) -> ( &str, Option<&str> )
 	{
-		self.button_type.text()
+		self.button_id.text()
 	}
 	
 	fn is_point_inside( &self, point: WindowPoint ) -> bool

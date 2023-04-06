@@ -7,8 +7,12 @@ use sdl2::render::{ Canvas, WindowCanvas, TextureCreator, RenderTarget, TextureQ
 use crate::str_err::{ Result, StrErr };
 use crate::ui::Ui;
 use crate::maze::Maze;
-use crate::point::{ WindowPoint, Convert, MazePoint };
-use crate::{ FONT, FONT_SIZE, BACKGROUND_COLOR, WALL_COLOR, CURSOR_COLOR, VISITED_CELL_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR, GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT };
+use crate::point::{ MazePoint, WindowPoint, Convert };
+use crate::{ FONT, FONT_SIZE,
+	BACKGROUND_COLOR, WALL_COLOR, CURSOR_COLOR, VISITED_CELL_COLOR, UI_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR,
+	UI_BUTTON_CLICKED_COLOR, UI_BUTTON_TEXT_COLOR,
+	GFX_UI_X, GFX_UI_Y, GFX_UI_WIDTH, GFX_UI_HEIGHT
+};
 
 pub struct Graphics<'ttf>
 {

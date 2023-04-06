@@ -52,7 +52,7 @@ impl Maze
 	{
 		if let Some(cursor) = self.cursor()
 		{
-			const DIRECTIONS: [ (i64,i64); 4 ] = [
+			const DIRECTIONS: [ ( i64, i64 ); 4 ] = [
 				( -1,  0 ),
 				(  1,  0 ),
 				(  0, -1 ),
