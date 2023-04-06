@@ -45,11 +45,11 @@ impl<'ttf> Graphics<'ttf>
 	fn draw_maze< T: RenderTarget >( &self, canvas: &mut Canvas<T>, maze: &Maze ) -> Result<()>
 	{
 		canvas.set_draw_color(VISITED_CELL_COLOR);
-		for point in maze.all_points()
+		for cell in maze.all_cells()
 		{
-			if maze.is_visited(point)
+			if maze.is_visited(cell)
 			{
-				let window_point: WindowPoint = point.convert(maze);
+				let window_point: WindowPoint = cell.convert(maze);
 				let cell_width = self.cell_width(maze);
 				let cell_height = self.cell_height(maze);
 				

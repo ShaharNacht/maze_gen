@@ -23,15 +23,15 @@ impl Maze
 {
 	pub fn new( width: i64, height: i64 ) -> Self
 	{
-		let start_point = MazePoint::new( 0, 0 );
+		let start_cell = MazePoint::new( 0, 0 );
 		
 		let mut walls = HashSet::new();
 		Self::fill_all_walls( &mut walls, width, height );
 		
-		let path = vec![start_point];
+		let path = vec![start_cell];
 		
 		let mut visited = HashSet::new();
-		visited.insert(start_point);
+		visited.insert(start_cell);
 		
 		let rng = thread_rng();
 		
@@ -76,7 +76,7 @@ impl Maze
 		}
 	}
 	
-	pub fn all_points(&self) -> impl Iterator< Item = MazePoint > + '_
+	pub fn all_cells(&self) -> impl Iterator< Item = MazePoint > + '_
 	{
 		( 0 .. self.height ).flat_map( |y| ( 0 .. self.width ).map( move |x| MazePoint::new( x, y ) ) )
 	}
@@ -86,9 +86,9 @@ impl Maze
 		self.path.last().copied()
 	}
 	
-	pub fn is_visited( &self, point: MazePoint ) -> bool
+	pub fn is_visited( &self, cell: MazePoint ) -> bool
 	{
-		self.visited.contains(&point)
+		self.visited.contains(&cell)
 	}
 	
 	pub fn walls(&self) -> impl Iterator< Item = &Wall >
