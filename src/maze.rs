@@ -148,43 +148,17 @@ impl Wall
 			return Err( "A wall must be between two adjacent cells (no diagonals allowed)".to_string() );
 		}
 		
-		let first;
-		let second;
-		
 		use std::cmp::Ordering::*;
 		
-		match cell1.y.cmp(&cell2.y)
+		match ( cell1.x.cmp(&cell2.x), cell1.y.cmp(&cell2.y) )
 		{
-			Less =>
-			{
-				first = cell1;
-				second = cell2;
-			}
+			( _, Less ) | ( Less, Equal ) =>
+				Ok( Self( cell1, cell2 ) ),
 			
-			Greater =>
-			{
-				first = cell2;
-				second = cell1;
-			}
+			( _, Greater ) | ( Greater, Equal ) =>
+				Ok( Self( cell2, cell1 ) ),
 			
-			Equal => match cell1.x.cmp(&cell2.x)
-			{
-				Less =>
-				{
-					first = cell1;
-					second = cell2;
-				}
-				
-				Greater =>
-				{
-					first = cell2;
-					second = cell1;
-				}
-				
-				Equal => unreachable!()
-			}
+			_ => unreachable!()
 		}
-		
-		Ok( Self( first, second ) )
 	}
 }
