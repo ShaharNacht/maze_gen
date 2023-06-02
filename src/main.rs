@@ -1,5 +1,6 @@
 mod str_err;
 mod point;
+mod color_blend;
 mod maze;
 mod graphics;
 mod ui;

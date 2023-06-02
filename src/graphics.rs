@@ -1,10 +1,10 @@
-use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::ttf::{ Sdl2TtfContext, Font };
 use sdl2::video::WindowContext;
 use sdl2::render::{ Canvas, WindowCanvas, TextureCreator, RenderTarget, TextureQuery };
 
 use crate::str_err::{ Result, StrErr };
+use crate::color_blend::ColorBlend;
 use crate::ui::Ui;
 use crate::maze::Maze;
 use crate::point::{ MazePoint, WindowPoint, Convert };
@@ -109,7 +109,7 @@ impl<'ttf> Graphics<'ttf>
 			}
 			else
 			{
-				canvas.set_draw_color( Self::blend_colors( UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR, button.highlight ) );
+				canvas.set_draw_color( UI_BUTTON_COLOR.blend( UI_BUTTON_HIGHLIGHT_COLOR, button.highlight ) );
 			}
 			
 			canvas.fill_rect(rect)?;
@@ -149,33 +149,5 @@ impl<'ttf> Graphics<'ttf>
 		let p2: WindowPoint = p2.convert(maze);
 		
 		( p2 - p1 ).y
-	}
-	
-	fn blend_colors( color1: impl Into<Color>, color2: impl Into<Color>, factor: f64 ) -> Color
-	{
-		fn to_f64_tuple( color: impl Into<Color> ) -> ( f64, f64, f64, f64 )
-		{
-			let color = color.into().rgba();
-			( color.0 as f64, color.1 as f64, color.2 as f64, color.3 as f64 )
-		}
-		
-		fn blend( value1: f64, value2: f64, factor: f64 ) -> f64
-		{
-			value1 * ( 1.0 - factor ) + value2 * factor
-		}
-		
-		let factor = factor.clamp( 0.0, 1.0 );
-		
-		let color1 = to_f64_tuple(color1);
-		let color2 = to_f64_tuple(color2);
-		
-		let result = (
-			blend( color1.0, color2.0, factor ) as u8,
-			blend( color1.1, color2.1, factor ) as u8,
-			blend( color1.2, color2.2, factor ) as u8,
-			blend( color1.3, color2.3, factor ) as u8
-		);
-		
-		result.into()
 	}
 }
