@@ -1,14 +1,14 @@
 use sdl2::pixels::Color;
 
-pub trait ColorBlend
+pub trait ColorBlend<O>
 {
-	fn blend( self, other: Self, factor: f64 ) -> Color;
+	fn blend( self, other: O, factor: f64 ) -> Color;
 }
 
-impl<T> ColorBlend for T
-	where T: Into<Color>
+impl< S, O > ColorBlend<O> for S
+	where S: Into<Color>, O: Into<Color>
 {
-	fn blend( self, other: Self, factor: f64 ) -> Color
+	fn blend( self, other: O, factor: f64 ) -> Color
 	{
 		fn to_f64_tuple( color: impl Into<Color> ) -> ( f64, f64, f64, f64 )
 		{

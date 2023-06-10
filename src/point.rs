@@ -137,11 +137,11 @@ impl From<WindowPoint> for (i64,i64)
 	}
 }
 
-impl Into<sdl2::rect::Point> for WindowPoint
+impl From<WindowPoint> for sdl2::rect::Point
 {
-	fn into(self) -> sdl2::rect::Point
+	fn from( value: WindowPoint ) -> Self
 	{
-		sdl2::rect::Point::new( self.x as i32, self.y as i32 )
+		Self::new( value.x as i32, value.y as i32 )
 	}
 }
 
