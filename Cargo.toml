@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 sdl2 = { version = "0.36.0", features = ["ttf"] }
 rand = "0.8.5"
+
+[target.'cfg(target_os = "emscripten")'.dependencies]
+emscripten-functions = "0.2.1"
