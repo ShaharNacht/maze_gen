@@ -2,6 +2,7 @@ mod color_blend;
 mod graphics;
 mod maze;
 mod point;
+mod stable_loop;
 mod str_err;
 mod ui;
 
