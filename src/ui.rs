@@ -68,23 +68,16 @@ impl Ui
 		{
 			let mouse_over = button.is_point_inside(self.mouse);
 			
-			if mouse_over
+			if mouse_over && self.pressed_button_id.is_none()
 			{
-				if self.pressed_button_id.is_none()
+				if self.mouse_pressed && !self.mouse_pressed_prev
 				{
-					if self.mouse_pressed && !self.mouse_pressed_prev
-					{
-						button.is_pressed = true;
-						self.pressed_button_id = Some(button.button_id);
-					}
-					else
-					{
-						button.highlight += 0.1;
-					}
+					button.is_pressed = true;
+					self.pressed_button_id = Some(button.button_id);
 				}
 				else
 				{
-					button.highlight -= 0.1;
+					button.highlight += 0.1;
 				}
 			}
 			else
@@ -158,7 +151,7 @@ impl Button
 {
 	fn new( button_id: ButtonId, position: WindowPoint, width: i64, height: i64 ) -> Self
 	{
-		Self { button_id: button_id, position, width, height, highlight: 0.0, is_pressed: false }
+		Self { button_id, position, width, height, highlight: 0.0, is_pressed: false }
 	}
 	
 	pub fn text(&self) -> ( &str, Option<&str> )
@@ -168,7 +161,9 @@ impl Button
 	
 	fn is_point_inside( &self, point: WindowPoint ) -> bool
 	{
-		point.x >= self.position.x && point.x < ( self.position.x + self.width ) &&
-			point.y >= self.position.y && point.y < ( self.position.y + self.height )
+		point.x >= self.position.x &&
+			point.x < ( self.position.x + self.width ) &&
+			point.y >= self.position.y
+			&& point.y < ( self.position.y + self.height )
 	}
 }

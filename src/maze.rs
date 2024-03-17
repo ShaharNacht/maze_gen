@@ -64,10 +64,8 @@ impl Maze
 				.filter( |&step| self.is_point_inside(step) )
 				.collect();
 			
-			if !possible_steps.is_empty()
+			if let Some(&step) = possible_steps.choose(&mut self.rng)
 			{
-				let step = *possible_steps.choose(&mut self.rng).unwrap();
-				
 				self.walls.remove( &Wall::new( cursor, step ).unwrap() );
 				
 				self.path.push(step);
