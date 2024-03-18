@@ -2,9 +2,11 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 pub trait StableLoop {
-    fn update(&mut self, current_fps: usize) -> bool;
+    type Ctx;
 
-    fn draw(&mut self, current_fps: usize);
+    fn update(&mut self, ctx: &mut Self::Ctx, current_fps: usize) -> bool;
+
+    fn draw(&mut self, ctx: &mut Self::Ctx, current_fps: usize);
 
     fn target_fps(&self) -> f64 {
         60.0
@@ -21,15 +23,15 @@ pub trait StableLoop {
 
     #[cfg(not(target_os = "emscripten"))]
     /// Don't override this function
-    fn main_loop(&mut self) {
+    fn main_loop(&mut self, ctx: &mut Self::Ctx) {
         let mut state = StableLoopState::new();
 
-        while state.single_iteration(self) {}
+        while state.single_iteration(self, ctx) {}
     }
 
     #[cfg(target_os = "emscripten")]
     /// Don't override this function
-    fn main_loop(mut self)
+    fn main_loop(mut self, ctx: &mut Self::Ctx)
     where
         Self: 'static + Sized,
     {
@@ -48,7 +50,7 @@ pub trait StableLoop {
 
         emscripten_functions::emscripten::set_main_loop(
             move || {
-                state.single_iteration(&mut self);
+                state.single_iteration(&mut self, ctx);
             },
             0,
             true,
@@ -88,7 +90,7 @@ impl StableLoopState {
         }
     }
 
-    fn single_iteration<T: StableLoop + ?Sized>(&mut self, app: &mut T) -> bool {
+    fn single_iteration<T: StableLoop + ?Sized>(&mut self, app: &mut T, ctx: &mut T::Ctx) -> bool {
         let now = self.time.time_since_start();
         self.time_accumulator += now - self.prev_time;
 
@@ -97,7 +99,7 @@ impl StableLoopState {
         let mut needs_draw = false;
 
         while self.time_accumulator >= target_frame_time {
-            if app.update(self.current_fps) {
+            if app.update(ctx, self.current_fps) {
                 needs_draw = true;
 
                 if self.time_accumulator > target_frame_time * app.max_updates_per_frame() {
@@ -121,7 +123,7 @@ impl StableLoopState {
         }
 
         if keep_going && needs_draw {
-            app.draw(self.current_fps);
+            app.draw(ctx, self.current_fps);
 
             self.fps_counter += 1;
         }

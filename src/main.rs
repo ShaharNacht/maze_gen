@@ -1,3 +1,4 @@
+mod app;
 mod color_blend;
 mod graphics;
 mod maze;
@@ -9,15 +10,18 @@ mod ui;
 use std::thread::sleep;
 use std::time::Duration;
 
-use point::WindowPoint;
 use sdl2::pixels::Color;
+use sdl2::EventPump;
+use stable_loop::StableLoop;
 
+use crate::app::App;
 use crate::graphics::Graphics;
 use crate::maze::Maze;
+use crate::point::WindowPoint;
 use crate::str_err::{Result, StrErr};
 use crate::ui::Ui;
 
-const FPS: u32 = 60;
+const TARGET_FPS: f64 = 60.0;
 
 const MAZE_WIDTH: i64 = 16;
 const MAZE_HEIGHT: i64 = 16;
@@ -51,43 +55,47 @@ const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
 fn main() -> Result<()> {
     let mut ctx = Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32)?;
-
-    let mut maze = Maze::new(MAZE_WIDTH, MAZE_HEIGHT);
-    let mut ui = Ui::new();
-
     let ttf_ctx = sdl2::ttf::init().str_err()?;
-    let graphics = Graphics::new(&ttf_ctx, &ctx.canvas)?;
 
-    ctx.main_loop(|event_pump, canvas| {
-        for event in event_pump.poll_iter() {
-            use sdl2::event::Event::*;
-            use sdl2::keyboard::Scancode;
+    // let mut maze = Maze::new(MAZE_WIDTH, MAZE_HEIGHT);
+    // let mut ui = Ui::new();
 
-            match event {
-                Quit { .. }
-                | KeyUp {
-                    scancode: Some(Scancode::Escape),
-                    ..
-                } => {
-                    return Ok(false);
-                }
+    // let graphics = Graphics::new(&ttf_ctx, &ctx.canvas)?;
 
-                _ => {}
-            }
-        }
+    // ctx.main_loop(|event_pump, canvas| {
+    //     for event in event_pump.poll_iter() {
+    //         use sdl2::event::Event::*;
+    //         use sdl2::keyboard::Scancode;
 
-        let mouse_state = event_pump.mouse_state();
-        let mouse = WindowPoint::new(mouse_state.x() as i64, mouse_state.y() as i64);
-        let mouse_pressed = mouse_state.is_mouse_button_pressed(sdl2::mouse::MouseButton::Left);
-        ui.update(mouse, mouse_pressed, &mut maze);
+    //         match event {
+    //             Quit { .. }
+    //             | KeyUp {
+    //                 scancode: Some(Scancode::Escape),
+    //                 ..
+    //             } => {
+    //                 return Ok(false);
+    //             }
 
-        graphics.draw(canvas, &maze, &ui)?;
-        canvas.present();
+    //             _ => {}
+    //         }
+    //     }
 
-        sleep(Duration::from_secs(1) / FPS);
+    //     let mouse_state = event_pump.mouse_state();
+    //     let mouse = WindowPoint::new(mouse_state.x() as i64, mouse_state.y() as i64);
+    //     let mouse_pressed = mouse_state.is_mouse_button_pressed(sdl2::mouse::MouseButton::Left);
+    //     ui.update(mouse, mouse_pressed, &mut maze);
 
-        Ok(true)
-    })?;
+    //     graphics.draw(canvas, &maze, &ui)?;
+    //     canvas.present();
+
+    //     sleep(Duration::from_secs(1) / FPS);
+
+    //     Ok(true)
+    // })?;
+
+    let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, &ttf_ctx, &ctx.canvas)?;
+
+    app.main_loop(&mut ctx);
 
     Ok(())
 }
@@ -96,6 +104,7 @@ pub struct Context {
     sdl_ctx: sdl2::Sdl,
     video_subsystem: sdl2::VideoSubsystem,
     canvas: sdl2::render::WindowCanvas,
+    event_pump: EventPump,
 }
 
 impl Context {
@@ -114,11 +123,18 @@ impl Context {
 
         let canvas = window.into_canvas().accelerated().build().str_err()?;
 
+        let event_pump = sdl_ctx.event_pump()?;
+
         Ok(Self {
             sdl_ctx,
             video_subsystem,
             canvas,
+            event_pump,
         })
+    }
+
+    pub fn event_pump(&mut self) -> &mut EventPump {
+        &mut self.event_pump
     }
 
     pub fn window(&self) -> &sdl2::video::Window {
