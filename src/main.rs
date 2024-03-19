@@ -7,19 +7,14 @@ mod stable_loop;
 mod str_err;
 mod ui;
 
-use std::thread::sleep;
-use std::time::Duration;
-
 use sdl2::pixels::Color;
-use sdl2::EventPump;
+use sdl2::render::WindowCanvas;
+use sdl2::ttf::Sdl2TtfContext;
+use sdl2::{EventPump, Sdl, VideoSubsystem};
 use stable_loop::StableLoop;
 
 use crate::app::App;
-use crate::graphics::Graphics;
-use crate::maze::Maze;
-use crate::point::WindowPoint;
 use crate::str_err::{Result, StrErr};
-use crate::ui::Ui;
 
 const TARGET_FPS: f64 = 60.0;
 
@@ -54,44 +49,8 @@ const UI_BUTTON_CLICKED_COLOR: Color = Color::RGB(0x43, 0x61, 0x87);
 const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
 fn main() -> Result<()> {
-    let mut ctx = Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32)?;
-    let ttf_ctx = sdl2::ttf::init().str_err()?;
-
-    // let mut maze = Maze::new(MAZE_WIDTH, MAZE_HEIGHT);
-    // let mut ui = Ui::new();
-
-    // let graphics = Graphics::new(&ttf_ctx, &ctx.canvas)?;
-
-    // ctx.main_loop(|event_pump, canvas| {
-    //     for event in event_pump.poll_iter() {
-    //         use sdl2::event::Event::*;
-    //         use sdl2::keyboard::Scancode;
-
-    //         match event {
-    //             Quit { .. }
-    //             | KeyUp {
-    //                 scancode: Some(Scancode::Escape),
-    //                 ..
-    //             } => {
-    //                 return Ok(false);
-    //             }
-
-    //             _ => {}
-    //         }
-    //     }
-
-    //     let mouse_state = event_pump.mouse_state();
-    //     let mouse = WindowPoint::new(mouse_state.x() as i64, mouse_state.y() as i64);
-    //     let mouse_pressed = mouse_state.is_mouse_button_pressed(sdl2::mouse::MouseButton::Left);
-    //     ui.update(mouse, mouse_pressed, &mut maze);
-
-    //     graphics.draw(canvas, &maze, &ui)?;
-    //     canvas.present();
-
-    //     sleep(Duration::from_secs(1) / FPS);
-
-    //     Ok(true)
-    // })?;
+    let (mut ctx, ttf_ctx) =
+        Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32)?;
 
     let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, &ttf_ctx, &ctx.canvas)?;
 
@@ -101,17 +60,23 @@ fn main() -> Result<()> {
 }
 
 pub struct Context {
-    sdl_ctx: sdl2::Sdl,
-    video_subsystem: sdl2::VideoSubsystem,
-    canvas: sdl2::render::WindowCanvas,
+    _sdl_ctx: Sdl,
+    _video_subsystem: VideoSubsystem,
+    canvas: WindowCanvas,
     event_pump: EventPump,
 }
 
 impl Context {
-    pub fn new(window_title: &str, window_width: u32, window_height: u32) -> Result<Self> {
+    pub fn new(
+        window_title: &str,
+        window_width: u32,
+        window_height: u32,
+    ) -> Result<(Self, Sdl2TtfContext)> {
         sdl2::hint::set("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2");
 
         let sdl_ctx = sdl2::init()?;
+
+        let ttf_ctx = sdl2::ttf::init().str_err()?;
 
         let video_subsystem = sdl_ctx.video()?;
 
@@ -125,40 +90,22 @@ impl Context {
 
         let event_pump = sdl_ctx.event_pump()?;
 
-        Ok(Self {
-            sdl_ctx,
-            video_subsystem,
-            canvas,
-            event_pump,
-        })
+        Ok((
+            Self {
+                _sdl_ctx: sdl_ctx,
+                _video_subsystem: video_subsystem,
+                canvas,
+                event_pump,
+            },
+            ttf_ctx,
+        ))
     }
 
     pub fn event_pump(&mut self) -> &mut EventPump {
         &mut self.event_pump
     }
 
-    pub fn window(&self) -> &sdl2::video::Window {
-        self.canvas.window()
-    }
-
-    pub fn window_mut(&mut self) -> &mut sdl2::video::Window {
-        self.canvas.window_mut()
-    }
-
-    pub fn main_loop<F>(&mut self, mut loop_func: F) -> Result<()>
-    where
-        F: FnMut(&mut sdl2::EventPump, &mut sdl2::render::WindowCanvas) -> Result<bool>,
-    {
-        let mut event_pump = self.sdl_ctx.event_pump()?;
-        let mut keep_running = true;
-
-        while keep_running {
-            match loop_func(&mut event_pump, &mut self.canvas) {
-                Ok(result) => keep_running = result,
-                Err(err) => return Err(err),
-            }
-        }
-
-        Ok(())
+    pub fn canvas(&mut self) -> &mut WindowCanvas {
+        &mut self.canvas
     }
 }

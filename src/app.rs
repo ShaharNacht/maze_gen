@@ -1,10 +1,12 @@
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
+use sdl2::mouse::MouseButton;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::Sdl2TtfContext;
 
 use crate::graphics::Graphics;
 use crate::maze::Maze;
+use crate::point::WindowPoint;
 use crate::stable_loop::StableLoop;
 use crate::str_err::Result;
 use crate::ui::Ui;
@@ -58,8 +60,26 @@ impl<'ttf> StableLoop for App<'ttf> {
     }
 
     fn update(&mut self, ctx: &mut Self::Ctx, _current_fps: usize) -> bool {
-        self.handle_events(ctx.event_pump().poll_iter())
+        let event_pump = ctx.event_pump();
+
+        let keep_going = self.handle_events(event_pump.poll_iter());
+
+        if !keep_going {
+            return false;
+        }
+
+        let mouse_state = event_pump.mouse_state();
+        let mouse = WindowPoint::new(mouse_state.x() as i64, mouse_state.y() as i64);
+        let mouse_pressed = mouse_state.is_mouse_button_pressed(MouseButton::Left);
+        self.ui.update(mouse, mouse_pressed, &mut self.maze);
+
+        true
     }
 
-    fn draw(&mut self, ctx: &mut Self::Ctx, current_fps: usize) {}
+    fn draw(&mut self, ctx: &mut Self::Ctx, _current_fps: usize) {
+        let canvas = ctx.canvas();
+
+        self.graphics.draw(canvas, &self.maze, &self.ui).unwrap();
+        canvas.present();
+    }
 }
