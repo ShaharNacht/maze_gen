@@ -1,0 +1,2 @@
+[target.'cfg(target_os = "emscripten")']
+rustflags = ["-C", "link-args=hack/open64.o --use-port=sdl2 --use-port=sdl2_ttf --preload-file font/Cabin-Bold.ttf -o wasm/index.html"]

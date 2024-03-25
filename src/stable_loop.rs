@@ -31,7 +31,7 @@ pub trait StableLoop {
 
     #[cfg(target_os = "emscripten")]
     /// Don't override this function
-    fn main_loop(mut self, ctx: &mut Self::Ctx)
+    fn main_loop(mut self, ctx: &'static mut Self::Ctx)
     where
         Self: 'static + Sized,
     {
@@ -130,6 +130,7 @@ impl StableLoopState {
 
         self.prev_time = now;
 
+        #[cfg(not(target_os = "emscripten"))]
         if keep_going {
             app.wait(target_frame_time - self.time_accumulator);
         }

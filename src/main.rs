@@ -11,9 +11,9 @@ use sdl2::pixels::Color;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::Sdl2TtfContext;
 use sdl2::{EventPump, Sdl, VideoSubsystem};
-use stable_loop::StableLoop;
 
 use crate::app::App;
+use crate::stable_loop::StableLoop;
 use crate::str_err::{Result, StrErr};
 
 const TARGET_FPS: f64 = 60.0;
@@ -52,9 +52,24 @@ fn main() -> Result<()> {
     let (mut ctx, ttf_ctx) =
         Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32)?;
 
-    let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, &ttf_ctx, &ctx.canvas)?;
+    let ctx_ref;
+    let ttf_ctx_ref;
 
-    app.main_loop(&mut ctx);
+    #[cfg(not(target_os = "emscripten"))]
+    {
+        ctx_ref = &mut ctx;
+        ttf_ctx_ref = &ttf_ctx;
+    }
+
+    #[cfg(target_os = "emscripten")]
+    {
+        ctx_ref = Box::leak(Box::new(ctx));
+        ttf_ctx_ref = Box::leak(Box::new(ttf_ctx));
+    }
+
+    let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, ttf_ctx_ref, &ctx_ref.canvas())?;
+
+    app.main_loop(ctx_ref);
 
     Ok(())
 }

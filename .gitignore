@@ -1,5 +1,7 @@
-/target
-maze_gen.exe
+/target/
+/wasm/
+/hack/*.o
+/maze_gen.exe
 
 /.vscode/
 
