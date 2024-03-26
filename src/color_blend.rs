@@ -30,6 +30,7 @@ where
 
         let u8_tuple: (u8, u8, u8, u8) =
             array::from_fn(|i| lerp(color1[i], color2[i], factor) as u8).into();
+
         u8_tuple.into()
     }
 }

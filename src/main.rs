@@ -1,5 +1,6 @@
 mod app;
 mod color_blend;
+mod color_hex;
 mod context;
 mod graphics;
 mod maze;
@@ -11,6 +12,7 @@ mod ui;
 use sdl2::pixels::Color;
 
 use crate::app::App;
+use crate::color_hex::hex_rgb;
 use crate::context::Context;
 use crate::stable_loop::StableLoop;
 use crate::str_err::Result;
@@ -37,14 +39,14 @@ const WINDOW_HEIGHT: i64 = GFX_MAZE_HEIGHT + GFX_UI_HEIGHT;
 const FONT: &str = "font/Cabin-Bold.ttf";
 const FONT_SIZE: u16 = 32;
 
-const BACKGROUND_COLOR: Color = Color::RGB(0x28, 0x24, 0x2E);
-const WALL_COLOR: Color = Color::RGB(0xFF, 0xFB, 0xDE);
-const CURSOR_COLOR: Color = Color::RGB(0xBD, 0x51, 0x6D);
-const VISITED_CELL_COLOR: Color = Color::RGB(0x6F, 0x9D, 0x81);
-const UI_COLOR: Color = Color::RGB(0x34, 0x4B, 0x68);
-const UI_BUTTON_COLOR: Color = Color::RGB(0x53, 0x78, 0xA7);
-const UI_BUTTON_HIGHLIGHT_COLOR: Color = Color::RGB(0x81, 0xC0, 0xC6);
-const UI_BUTTON_CLICKED_COLOR: Color = Color::RGB(0x43, 0x61, 0x87);
+const BACKGROUND_COLOR: Color = hex_rgb(0x28242E);
+const WALL_COLOR: Color = hex_rgb(0xFFFBDE);
+const CURSOR_COLOR: Color = hex_rgb(0xBD516D);
+const VISITED_CELL_COLOR: Color = hex_rgb(0x6F9D81);
+const UI_COLOR: Color = hex_rgb(0x344B68);
+const UI_BUTTON_COLOR: Color = hex_rgb(0x5378A7);
+const UI_BUTTON_HIGHLIGHT_COLOR: Color = hex_rgb(0x81C0C6);
+const UI_BUTTON_CLICKED_COLOR: Color = hex_rgb(0x436187);
 const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
 fn main() -> Result<()> {
