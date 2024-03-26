@@ -7,7 +7,7 @@ use crate::color_blend::ColorBlend;
 use crate::maze::Maze;
 use crate::point::{Convert, MazePoint, WindowPoint};
 use crate::str_err::{Result, StrErr};
-use crate::ui::Ui;
+use crate::ui::{ButtonState, Ui};
 use crate::{
     BACKGROUND_COLOR, CURSOR_COLOR, FONT, FONT_SIZE, GFX_UI_HEIGHT, GFX_UI_WIDTH, GFX_UI_X,
     GFX_UI_Y, UI_BUTTON_CLICKED_COLOR, UI_BUTTON_COLOR, UI_BUTTON_HIGHLIGHT_COLOR,
@@ -117,12 +117,10 @@ impl<'ttf> Graphics<'ttf> {
                 button.height as _,
             );
 
-            if button.is_pressed {
+            if let ButtonState::Normal { highlight, .. } = button.state {
+                canvas.set_draw_color(UI_BUTTON_COLOR.blend(UI_BUTTON_HIGHLIGHT_COLOR, highlight));
+            } else if let ButtonState::Pressed = button.state {
                 canvas.set_draw_color(UI_BUTTON_CLICKED_COLOR);
-            } else {
-                canvas.set_draw_color(
-                    UI_BUTTON_COLOR.blend(UI_BUTTON_HIGHLIGHT_COLOR, button.highlight),
-                );
             }
 
             canvas.fill_rect(rect)?;

@@ -11,7 +11,7 @@ use crate::maze::Maze;
 use crate::point::WindowPoint;
 use crate::stable_loop::StableLoop;
 use crate::str_err::Result;
-use crate::ui::Ui;
+use crate::ui::{ButtonId, Ui};
 use crate::Context;
 use crate::TARGET_FPS;
 
@@ -55,6 +55,38 @@ impl<'ttf> App<'ttf> {
                     return false;
                 }
 
+                Event::MouseMotion { x, y, .. } => {
+                    self.ui.on_mouse_move(WindowPoint::new(x as _, y as _));
+                }
+
+                Event::MouseButtonDown {
+                    mouse_btn: MouseButton::Left,
+                    x,
+                    y,
+                    ..
+                } => {
+                    self.ui.on_mouse_press(WindowPoint::new(x as _, y as _));
+                }
+
+                Event::MouseButtonUp {
+                    mouse_btn: MouseButton::Left,
+                    x,
+                    y,
+                    ..
+                } => {
+                    if let Some(clicked_button) =
+                        self.ui.on_mouse_release(WindowPoint::new(x as _, y as _))
+                    {
+                        match clicked_button {
+                            ButtonId::Step => {
+                                self.maze.step(&mut self.rng);
+                            }
+
+                            _ => {}
+                        }
+                    }
+                }
+
                 _ => {}
             }
         }
@@ -79,11 +111,7 @@ impl<'ttf> StableLoop for App<'ttf> {
             return false;
         }
 
-        let mouse_state = event_pump.mouse_state();
-        let mouse = WindowPoint::new(mouse_state.x() as i64, mouse_state.y() as i64);
-        let mouse_pressed = mouse_state.is_mouse_button_pressed(MouseButton::Left);
-        self.ui
-            .update(mouse, mouse_pressed, &mut self.maze, &mut self.rng);
+        self.ui.update();
 
         true
     }

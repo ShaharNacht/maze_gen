@@ -1,26 +1,15 @@
 use std::collections::BTreeMap;
 
-use rand::Rng;
-
-use crate::maze::Maze;
 use crate::point::WindowPoint;
 use crate::{GFX_UI_HEIGHT, GFX_UI_PADDING, GFX_UI_WIDTH, GFX_UI_X, GFX_UI_Y};
 
 pub struct Ui {
-    mouse: WindowPoint,
-    mouse_pressed: bool,
-    mouse_pressed_prev: bool,
-
     buttons: BTreeMap<ButtonId, Button>,
     pressed_button_id: Option<ButtonId>,
 }
 
 impl Ui {
     pub fn new() -> Self {
-        let mouse = WindowPoint::new(0, 0);
-        let mouse_pressed = false;
-        let mouse_pressed_prev = false;
-
         let button_count = ButtonId::all().len() as i64;
         let button_width =
             (GFX_UI_WIDTH - GFX_UI_PADDING - button_count * GFX_UI_PADDING) / button_count;
@@ -43,69 +32,65 @@ impl Ui {
         }
 
         Self {
-            mouse,
-            mouse_pressed,
-            mouse_pressed_prev,
             buttons,
             pressed_button_id: None,
         }
     }
 
-    pub fn update(
-        &mut self,
-        mouse: WindowPoint,
-        mouse_pressed: bool,
-        maze: &mut Maze,
-        rng: &mut impl Rng,
-    ) {
-        self.mouse = mouse;
-        self.mouse_pressed = mouse_pressed;
-
-        if !self.mouse_pressed {
-            if let Some(pressed_button_id) = self.pressed_button_id {
-                let button = self.buttons.get_mut(&pressed_button_id).unwrap();
-
-                button.is_pressed = false;
-                button.highlight = 0.0;
-
-                if button.is_point_inside(self.mouse) {
-                    self.click(pressed_button_id, maze, rng);
-                }
-
-                self.pressed_button_id = None;
-            }
-        }
-
+    pub fn update(&mut self) {
         for button in self.buttons.values_mut() {
-            let mouse_over = button.is_point_inside(self.mouse);
+            button.update();
+        }
+    }
 
-            if mouse_over && self.pressed_button_id.is_none() {
-                if self.mouse_pressed && !self.mouse_pressed_prev {
-                    button.is_pressed = true;
-                    self.pressed_button_id = Some(button.button_id);
-                } else {
-                    button.highlight += 0.1;
-                }
-            } else {
-                button.highlight -= 0.1;
+    pub fn on_mouse_move(&mut self, mouse: WindowPoint) {
+        if self.pressed_button_id.is_none() {
+            for button in self.buttons.values_mut() {
+                button.on_mouse_move(mouse);
             }
+        }
+    }
 
-            button.highlight = button.highlight.clamp(0.0, 1.0);
+    pub fn on_mouse_press(&mut self, mouse: WindowPoint) {
+        self.on_mouse_move(mouse);
+
+        if let Some(pressed_button) = self
+            .buttons
+            .values_mut()
+            .find(|button| button.is_point_inside(mouse))
+        {
+            pressed_button.on_mouse_press();
+
+            self.pressed_button_id = Some(pressed_button.button_id);
         }
 
-        self.mouse_pressed_prev = self.mouse_pressed;
+        self.on_mouse_move(mouse);
+    }
+
+    pub fn on_mouse_release(&mut self, mouse: WindowPoint) -> Option<ButtonId> {
+        let mut clicked_button = None;
+
+        self.on_mouse_move(mouse);
+
+        if let Some(pressed_button_id) = self.pressed_button_id {
+            let button = self.buttons.get_mut(&pressed_button_id).unwrap();
+
+            button.on_mouse_release(mouse);
+
+            if button.is_point_inside(mouse) {
+                clicked_button = Some(pressed_button_id);
+            }
+
+            self.pressed_button_id = None;
+        }
+
+        self.on_mouse_move(mouse);
+
+        clicked_button
     }
 
     pub fn buttons(&self) -> impl Iterator<Item = &Button> {
         self.buttons.values()
-    }
-
-    fn click(&self, button_id: ButtonId, maze: &mut Maze, rng: &mut impl Rng) {
-        match button_id {
-            ButtonId::Step => maze.step(rng),
-
-            _ => {}
-        }
     }
 }
 
@@ -144,24 +129,62 @@ pub struct Button {
     pub width: i64,
     pub height: i64,
 
-    pub highlight: f64,
-    pub is_pressed: bool,
+    pub state: ButtonState,
 }
 
 impl Button {
     fn new(button_id: ButtonId, position: WindowPoint, width: i64, height: i64) -> Self {
+        let state = ButtonState::Normal {
+            is_mouse_over: false,
+            highlight: 0.0,
+        };
+
         Self {
             button_id,
             position,
             width,
             height,
-            highlight: 0.0,
-            is_pressed: false,
+            state,
         }
     }
 
     pub fn text(&self) -> (&str, Option<&str>) {
         self.button_id.text()
+    }
+
+    fn update(&mut self) {
+        if let ButtonState::Normal {
+            is_mouse_over,
+            highlight,
+        } = &mut self.state
+        {
+            if *is_mouse_over {
+                *highlight += 0.1;
+            } else {
+                *highlight -= 0.1;
+            }
+
+            *highlight = highlight.clamp(0.0, 1.0);
+        }
+    }
+
+    fn on_mouse_move(&mut self, mouse: WindowPoint) {
+        let mouse_over = self.is_point_inside(mouse);
+
+        if let ButtonState::Normal { is_mouse_over, .. } = &mut self.state {
+            *is_mouse_over = mouse_over;
+        }
+    }
+
+    fn on_mouse_press(&mut self) {
+        self.state = ButtonState::Pressed;
+    }
+
+    fn on_mouse_release(&mut self, mouse: WindowPoint) {
+        self.state = ButtonState::Normal {
+            is_mouse_over: self.is_point_inside(mouse),
+            highlight: 0.0,
+        };
     }
 
     fn is_point_inside(&self, point: WindowPoint) -> bool {
@@ -170,4 +193,9 @@ impl Button {
             && point.y >= self.position.y
             && point.y < (self.position.y + self.height)
     }
+}
+
+pub enum ButtonState {
+    Normal { is_mouse_over: bool, highlight: f64 },
+    Pressed,
 }
