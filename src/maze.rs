@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
-use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::Rng;
 
 use crate::point::MazePoint;
 use crate::str_err::Result;
@@ -14,8 +13,6 @@ pub struct Maze {
     walls: HashSet<Wall>,
     path: Vec<MazePoint>,
     visited: HashSet<MazePoint>,
-
-    rng: ThreadRng,
 }
 
 impl Maze {
@@ -30,15 +27,12 @@ impl Maze {
         let mut visited = HashSet::new();
         visited.insert(start_cell);
 
-        let rng = thread_rng();
-
         Self {
             width,
             height,
             walls,
             path,
             visited,
-            rng,
         }
     }
 
@@ -50,7 +44,7 @@ impl Maze {
         self.height
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self, rng: &mut impl Rng) {
         if let Some(cursor) = self.cursor() {
             const DIRECTIONS: [(i64, i64); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
 
@@ -60,7 +54,9 @@ impl Maze {
                 .filter(|&step| self.is_point_inside(step))
                 .collect();
 
-            if let Some(&step) = possible_steps.choose(&mut self.rng) {
+            if !possible_steps.is_empty() {
+                let step = *possible_steps.choose(rng).unwrap();
+
                 self.walls.remove(&Wall::new(cursor, step).unwrap());
 
                 self.path.push(step);

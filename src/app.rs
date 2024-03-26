@@ -1,3 +1,5 @@
+use rand::rngs::ThreadRng;
+
 use sdl2::event::Event;
 use sdl2::keyboard::Scancode;
 use sdl2::mouse::MouseButton;
@@ -14,6 +16,8 @@ use crate::Context;
 use crate::TARGET_FPS;
 
 pub struct App<'ttf> {
+    rng: ThreadRng,
+
     maze: Maze,
     ui: Ui,
     graphics: Graphics<'ttf>,
@@ -26,11 +30,18 @@ impl<'ttf> App<'ttf> {
         ttf_ctx: &'ttf Sdl2TtfContext,
         canvas: &WindowCanvas,
     ) -> Result<Self> {
+        let rng = rand::thread_rng();
+
         let maze = Maze::new(maze_width, maze_height);
         let ui = Ui::new();
         let graphics = Graphics::new(ttf_ctx, canvas)?;
 
-        Ok(Self { maze, ui, graphics })
+        Ok(Self {
+            rng,
+            maze,
+            ui,
+            graphics,
+        })
     }
 
     fn handle_events(&mut self, events: impl Iterator<Item = Event>) -> bool {
@@ -71,7 +82,8 @@ impl<'ttf> StableLoop for App<'ttf> {
         let mouse_state = event_pump.mouse_state();
         let mouse = WindowPoint::new(mouse_state.x() as i64, mouse_state.y() as i64);
         let mouse_pressed = mouse_state.is_mouse_button_pressed(MouseButton::Left);
-        self.ui.update(mouse, mouse_pressed, &mut self.maze);
+        self.ui
+            .update(mouse, mouse_pressed, &mut self.maze, &mut self.rng);
 
         true
     }

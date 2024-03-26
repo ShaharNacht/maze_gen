@@ -62,6 +62,7 @@ fn main() -> Result<()> {
 
     #[cfg(target_os = "emscripten")]
     {
+        // emscripten's main loop requires everything to be 'static
         ctx_ref = Box::leak(Box::new(ctx));
         ttf_ctx_ref = Box::leak(Box::new(ttf_ctx));
     }

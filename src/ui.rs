@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use rand::Rng;
+
 use crate::maze::Maze;
 use crate::point::WindowPoint;
 use crate::{GFX_UI_HEIGHT, GFX_UI_PADDING, GFX_UI_WIDTH, GFX_UI_X, GFX_UI_Y};
@@ -49,7 +51,13 @@ impl Ui {
         }
     }
 
-    pub fn update(&mut self, mouse: WindowPoint, mouse_pressed: bool, maze: &mut Maze) {
+    pub fn update(
+        &mut self,
+        mouse: WindowPoint,
+        mouse_pressed: bool,
+        maze: &mut Maze,
+        rng: &mut impl Rng,
+    ) {
         self.mouse = mouse;
         self.mouse_pressed = mouse_pressed;
 
@@ -61,7 +69,7 @@ impl Ui {
                 button.highlight = 0.0;
 
                 if button.is_point_inside(self.mouse) {
-                    self.click(pressed_button_id, maze);
+                    self.click(pressed_button_id, maze, rng);
                 }
 
                 self.pressed_button_id = None;
@@ -92,9 +100,9 @@ impl Ui {
         self.buttons.values()
     }
 
-    fn click(&self, button_id: ButtonId, maze: &mut Maze) {
+    fn click(&self, button_id: ButtonId, maze: &mut Maze, rng: &mut impl Rng) {
         match button_id {
-            ButtonId::Step => maze.step(),
+            ButtonId::Step => maze.step(rng),
 
             _ => {}
         }
