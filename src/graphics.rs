@@ -1,12 +1,17 @@
-use sdl2::rect::Rect;
-use sdl2::render::{Canvas, RenderTarget, TextureCreator, TextureQuery, WindowCanvas};
-use sdl2::ttf::{Font, Sdl2TtfContext};
+use std::error::Error;
+use std::fmt::{self, Display};
+
+use sdl2::pixels::Color;
+use sdl2::rect::{Point as SdlPoint, Rect};
+use sdl2::render::{
+    Canvas, RenderTarget, Texture, TextureCreator, TextureQuery, TextureValueError, WindowCanvas,
+};
+use sdl2::ttf::{Font, FontError, Sdl2TtfContext};
 use sdl2::video::WindowContext;
 
 use crate::color_blend::ColorBlend;
 use crate::maze::Maze;
 use crate::point::{Convert, MazePoint, WindowPoint};
-use crate::str_err::{Result, StrErr};
 use crate::ui::{ButtonState, Ui};
 use crate::{
     BACKGROUND_COLOR, CURSOR_COLOR, FONT, FONT_SIZE, GFX_UI_HEIGHT, GFX_UI_WIDTH, GFX_UI_X,
@@ -20,7 +25,10 @@ pub struct Graphics<'ttf> {
 }
 
 impl<'ttf> Graphics<'ttf> {
-    pub fn new(ttf_ctx: &'ttf Sdl2TtfContext, canvas: &WindowCanvas) -> Result<Self> {
+    pub fn new(
+        ttf_ctx: &'ttf Sdl2TtfContext,
+        canvas: &WindowCanvas,
+    ) -> Result<Self, FontLoadError> {
         let font = ttf_ctx.load_font(FONT, FONT_SIZE)?;
 
         let texture_creator = canvas.texture_creator();
@@ -31,12 +39,12 @@ impl<'ttf> Graphics<'ttf> {
         })
     }
 
-    pub fn draw<T: RenderTarget>(
+    pub fn draw(
         &self,
-        canvas: &mut Canvas<T>,
+        canvas: &mut Canvas<impl RenderTarget>,
         maze: &Maze,
         ui: &Ui,
-    ) -> Result<()> {
+    ) -> Result<(), DrawError> {
         canvas.set_draw_color(BACKGROUND_COLOR);
         canvas.clear();
 
@@ -46,7 +54,11 @@ impl<'ttf> Graphics<'ttf> {
         Ok(())
     }
 
-    fn draw_maze<T: RenderTarget>(&self, canvas: &mut Canvas<T>, maze: &Maze) -> Result<()> {
+    fn draw_maze(
+        &self,
+        canvas: &mut Canvas<impl RenderTarget>,
+        maze: &Maze,
+    ) -> Result<(), DrawError> {
         canvas.set_draw_color(VISITED_CELL_COLOR);
         for cell in maze.all_cells() {
             if maze.is_visited(cell) {
@@ -60,7 +72,7 @@ impl<'ttf> Graphics<'ttf> {
                     cell_width as _,
                     cell_height as _,
                 );
-                canvas.fill_rect(rect)?;
+                Self::fill_rect(canvas, rect)?;
             }
         }
 
@@ -78,7 +90,7 @@ impl<'ttf> Graphics<'ttf> {
                 p2 = (wall.1 + (1, 0)).convert(maze);
             }
 
-            canvas.draw_line(p1, p2)?;
+            Self::draw_line(canvas, p1, p2)?;
         }
 
         if let Some(cursor) = maze.cursor() {
@@ -93,13 +105,13 @@ impl<'ttf> Graphics<'ttf> {
                 (cell_height / 2) as _,
             );
             canvas.set_draw_color(CURSOR_COLOR);
-            canvas.fill_rect(rect)?;
+            Self::fill_rect(canvas, rect)?;
         }
 
         Ok(())
     }
 
-    fn draw_ui<T: RenderTarget>(&self, canvas: &mut Canvas<T>, ui: &Ui) -> Result<()> {
+    fn draw_ui(&self, canvas: &mut Canvas<impl RenderTarget>, ui: &Ui) -> Result<(), DrawError> {
         let rect = Rect::new(
             GFX_UI_X as _,
             GFX_UI_Y as _,
@@ -107,7 +119,7 @@ impl<'ttf> Graphics<'ttf> {
             GFX_UI_HEIGHT as _,
         );
         canvas.set_draw_color(UI_COLOR);
-        canvas.fill_rect(rect)?;
+        Self::fill_rect(canvas, rect)?;
 
         for button in ui.buttons() {
             let rect = Rect::new(
@@ -123,31 +135,30 @@ impl<'ttf> Graphics<'ttf> {
                 canvas.set_draw_color(UI_BUTTON_CLICKED_COLOR);
             }
 
-            canvas.fill_rect(rect)?;
+            Self::fill_rect(canvas, rect)?;
 
             let text = button.text();
 
-            let text_surface = self
-                .font
-                .render(text.0)
-                .blended(UI_BUTTON_TEXT_COLOR)
-                .str_err()?;
-            let text_texture = self
-                .texture_creator
-                .create_texture_from_surface(text_surface)
-                .str_err()?;
+            let text_texture = Self::font_texture(
+                text.0,
+                UI_BUTTON_TEXT_COLOR,
+                &self.font,
+                &self.texture_creator,
+            )?;
+
             let TextureQuery {
                 width: text_width,
                 height: text_height,
                 ..
             } = text_texture.query();
+
             let text_center = (
                 (button.position.x + button.width / 2) as _,
                 (button.position.y + button.height / 2) as _,
             );
             let text_rect = Rect::from_center(text_center, text_width, text_height);
 
-            canvas.copy(&text_texture, None, text_rect)?;
+            Self::draw_texture(canvas, &text_texture, None, text_rect)?;
         }
 
         Ok(())
@@ -171,5 +182,104 @@ impl<'ttf> Graphics<'ttf> {
         let p2: WindowPoint = p2.convert(maze);
 
         (p2 - p1).y
+    }
+
+    fn fill_rect(
+        canvas: &mut Canvas<impl RenderTarget>,
+        rect: impl Into<Option<Rect>>,
+    ) -> Result<(), DrawError> {
+        canvas.fill_rect(rect).map_err(|e| DrawError::FillRect(e))
+    }
+
+    fn draw_line(
+        canvas: &mut Canvas<impl RenderTarget>,
+        start: impl Into<SdlPoint>,
+        end: impl Into<SdlPoint>,
+    ) -> Result<(), DrawError> {
+        canvas
+            .draw_line(start, end)
+            .map_err(|e| DrawError::DrawLine(e))
+    }
+
+    fn draw_texture(
+        canvas: &mut Canvas<impl RenderTarget>,
+        texture: &Texture,
+        src: impl Into<Option<Rect>>,
+        dst: impl Into<Option<Rect>>,
+    ) -> Result<(), DrawError> {
+        canvas
+            .copy(texture, src, dst)
+            .map_err(|e| DrawError::DrawTexture(e))
+    }
+
+    fn font_texture<'texture_creator, T>(
+        text: impl AsRef<str>,
+        color: impl Into<Color>,
+        font: &Font,
+        texture_creator: &'texture_creator TextureCreator<T>,
+    ) -> Result<Texture<'texture_creator>, DrawError> {
+        let surface = font
+            .render(text.as_ref())
+            .blended(color)
+            .map_err(|e| DrawError::FontRendering(e))?;
+
+        texture_creator
+            .create_texture_from_surface(surface)
+            .map_err(|e| DrawError::SurfaceToTexture(e))
+    }
+}
+
+#[derive(Debug)]
+pub struct FontLoadError(String);
+
+impl FontLoadError {
+    fn new(inner: String) -> Self {
+        Self(inner)
+    }
+}
+
+impl Error for FontLoadError {}
+
+impl Display for FontLoadError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Failed to load font: {}", self.0)
+    }
+}
+
+impl From<String> for FontLoadError {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
+#[derive(Debug)]
+pub enum DrawError {
+    FillRect(String),
+    DrawLine(String),
+    DrawTexture(String),
+    FontRendering(FontError),
+    SurfaceToTexture(TextureValueError),
+}
+
+impl Error for DrawError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::FontRendering(e) => Some(e),
+            Self::SurfaceToTexture(e) => Some(e),
+
+            Self::FillRect(_) | Self::DrawLine(_) | Self::DrawTexture(_) => None,
+        }
+    }
+}
+
+impl Display for DrawError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::FillRect(e) => write!(f, "Failed to fill rect: {}", e),
+            Self::DrawLine(e) => write!(f, "Failed to draw line: {}", e),
+            Self::DrawTexture(e) => write!(f, "Failed to draw texture: {}", e),
+            Self::FontRendering(e) => write!(f, "Failed to render font: {}", e),
+            Self::SurfaceToTexture(e) => write!(f, "Failed to convert surface to texture: {}", e),
+        }
     }
 }

@@ -6,11 +6,10 @@ use sdl2::mouse::MouseButton;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::Sdl2TtfContext;
 
-use crate::graphics::Graphics;
+use crate::graphics::{FontLoadError, Graphics};
 use crate::maze::Maze;
 use crate::point::WindowPoint;
 use crate::stable_loop::StableLoop;
-use crate::str_err::Result;
 use crate::ui::{ButtonId, Ui};
 use crate::Context;
 use crate::TARGET_FPS;
@@ -29,7 +28,7 @@ impl<'ttf> App<'ttf> {
         maze_height: i64,
         ttf_ctx: &'ttf Sdl2TtfContext,
         canvas: &WindowCanvas,
-    ) -> Result<Self> {
+    ) -> Result<Self, FontLoadError> {
         let rng = rand::thread_rng();
 
         let maze = Maze::new(maze_width, maze_height);
@@ -119,7 +118,10 @@ impl<'ttf> StableLoop for App<'ttf> {
     fn draw(&mut self, ctx: &mut Self::Ctx, _current_fps: usize) {
         let canvas = ctx.canvas();
 
-        self.graphics.draw(canvas, &self.maze, &self.ui).unwrap();
+        if let Err(e) = self.graphics.draw(canvas, &self.maze, &self.ui) {
+            eprintln!("Failed to draw app: {}", e);
+        }
+
         canvas.present();
     }
 }
