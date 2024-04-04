@@ -39,10 +39,10 @@ pub trait StableLoop {
 
         emscripten_functions::emscripten::run_script(format!(
             r##"
-					let canvas = document.getElementById("canvas");
-					canvas.style.width = canvas.width / {0} + "px";
-					canvas.style.height = canvas.height / {0} + "px";
-				"##,
+                let canvas = document.getElementById("canvas");
+                canvas.style.width = canvas.width / {0} + "px";
+                canvas.style.height = canvas.height / {0} + "px";
+            "##,
             dpr
         ));
 

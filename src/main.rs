@@ -15,7 +15,6 @@ use crate::app::App;
 use crate::color_hex::hex_rgb;
 use crate::context::Context;
 use crate::stable_loop::StableLoop;
-use crate::str_err::Result;
 
 const TARGET_FPS: f64 = 60.0;
 
@@ -49,9 +48,9 @@ const UI_BUTTON_HIGHLIGHT_COLOR: Color = hex_rgb(0x81C0C6);
 const UI_BUTTON_CLICKED_COLOR: Color = hex_rgb(0x436187);
 const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
-fn main() -> Result<()> {
+fn main() {
     let (mut ctx, ttf_ctx) =
-        Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32)?;
+        Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32).unwrap();
 
     let ctx_ref;
     let ttf_ctx_ref;
@@ -69,9 +68,7 @@ fn main() -> Result<()> {
         ttf_ctx_ref = Box::leak(Box::new(ttf_ctx));
     }
 
-    let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, ttf_ctx_ref, &ctx_ref.canvas())?;
+    let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, ttf_ctx_ref, ctx_ref.canvas()).unwrap();
 
     app.main_loop(ctx_ref);
-
-    Ok(())
 }
