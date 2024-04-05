@@ -4,7 +4,6 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 
 use crate::point::MazePoint;
-use crate::str_err::Result;
 
 pub struct Maze {
     width: i64,
@@ -113,7 +112,7 @@ impl Maze {
 pub struct Wall(pub MazePoint, pub MazePoint);
 
 impl Wall {
-    fn new(cell1: MazePoint, cell2: MazePoint) -> Result<Self> {
+    fn new(cell1: MazePoint, cell2: MazePoint) -> Result<Self, String> {
         let x_diff = (cell2.x - cell1.x).abs();
         let y_diff = (cell2.y - cell1.y).abs();
 

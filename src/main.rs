@@ -6,7 +6,6 @@ mod graphics;
 mod maze;
 mod point;
 mod stable_loop;
-mod str_err;
 mod ui;
 
 use sdl2::pixels::Color;
