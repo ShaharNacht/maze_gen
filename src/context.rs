@@ -21,20 +21,25 @@ impl Context {
     ) -> Result<(Self, Sdl2TtfContext), InitError> {
         sdl2::hint::set("SDL_WINDOWS_DPI_AWARENESS", "permonitorv2");
 
-        let sdl_ctx = sdl2::init().sdl_init_error()?;
+        let sdl_ctx = sdl2::init().map_err(InitError::SdlInit)?;
 
-        let ttf_ctx = sdl2::ttf::init()?;
+        let ttf_ctx = sdl2::ttf::init().map_err(InitError::TtfInit)?;
 
-        let video_subsystem = sdl_ctx.video().video_subsystem_error()?;
+        let video_subsystem = sdl_ctx.video().map_err(InitError::VideoSubsystem)?;
 
         let window = video_subsystem
             .window(window_title, window_width, window_height)
             .position_centered()
-            .build()?;
+            .build()
+            .map_err(InitError::Window)?;
 
-        let canvas = window.into_canvas().accelerated().build().canvas_error()?;
+        let canvas = window
+            .into_canvas()
+            .accelerated()
+            .build()
+            .map_err(InitError::Canvas)?;
 
-        let event_pump = sdl_ctx.event_pump().event_pump_error()?;
+        let event_pump = sdl_ctx.event_pump().map_err(InitError::EventPump)?;
 
         Ok((
             Self {
@@ -88,49 +93,5 @@ impl Error for InitError {
 
             Self::SdlInit(_) | Self::VideoSubsystem(_) | Self::EventPump(_) => None,
         }
-    }
-}
-
-impl From<ttf::InitError> for InitError {
-    fn from(value: ttf::InitError) -> Self {
-        Self::TtfInit(value)
-    }
-}
-
-impl From<WindowBuildError> for InitError {
-    fn from(value: WindowBuildError) -> Self {
-        Self::Window(value)
-    }
-}
-
-trait StringErrorToInitError<T> {
-    fn sdl_init_error(self) -> Result<T, InitError>;
-
-    fn video_subsystem_error(self) -> Result<T, InitError>;
-
-    fn event_pump_error(self) -> Result<T, InitError>;
-}
-
-impl<T> StringErrorToInitError<T> for Result<T, String> {
-    fn sdl_init_error(self) -> Result<T, InitError> {
-        self.map_err(|e| InitError::SdlInit(e))
-    }
-
-    fn video_subsystem_error(self) -> Result<T, InitError> {
-        self.map_err(|e| InitError::VideoSubsystem(e))
-    }
-
-    fn event_pump_error(self) -> Result<T, InitError> {
-        self.map_err(|e| InitError::EventPump(e))
-    }
-}
-
-trait CanvasErrorToInitError<T> {
-    fn canvas_error(self) -> Result<T, InitError>;
-}
-
-impl<T> CanvasErrorToInitError<T> for Result<T, IntegerOrSdlError> {
-    fn canvas_error(self) -> Result<T, InitError> {
-        self.map_err(|e| InitError::Canvas(e))
     }
 }

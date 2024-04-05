@@ -188,7 +188,7 @@ impl<'ttf> Graphics<'ttf> {
         canvas: &mut Canvas<impl RenderTarget>,
         rect: impl Into<Option<Rect>>,
     ) -> Result<(), DrawError> {
-        canvas.fill_rect(rect).map_err(|e| DrawError::FillRect(e))
+        canvas.fill_rect(rect).map_err(DrawError::FillRect)
     }
 
     fn draw_line(
@@ -196,9 +196,7 @@ impl<'ttf> Graphics<'ttf> {
         start: impl Into<SdlPoint>,
         end: impl Into<SdlPoint>,
     ) -> Result<(), DrawError> {
-        canvas
-            .draw_line(start, end)
-            .map_err(|e| DrawError::DrawLine(e))
+        canvas.draw_line(start, end).map_err(DrawError::DrawLine)
     }
 
     fn draw_texture(
@@ -209,7 +207,7 @@ impl<'ttf> Graphics<'ttf> {
     ) -> Result<(), DrawError> {
         canvas
             .copy(texture, src, dst)
-            .map_err(|e| DrawError::DrawTexture(e))
+            .map_err(DrawError::DrawTexture)
     }
 
     fn font_texture<'texture_creator, T>(
@@ -221,11 +219,11 @@ impl<'ttf> Graphics<'ttf> {
         let surface = font
             .render(text.as_ref())
             .blended(color)
-            .map_err(|e| DrawError::FontRendering(e))?;
+            .map_err(DrawError::FontRendering)?;
 
         texture_creator
             .create_texture_from_surface(surface)
-            .map_err(|e| DrawError::SurfaceToTexture(e))
+            .map_err(DrawError::SurfaceToTexture)
     }
 }
 
