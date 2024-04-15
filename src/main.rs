@@ -5,6 +5,7 @@ mod context;
 mod graphics;
 mod maze;
 mod point;
+mod point_new;
 mod stable_loop;
 mod ui;
 
