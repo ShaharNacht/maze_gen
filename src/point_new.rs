@@ -28,6 +28,10 @@ impl Space for Window {
     type Number = i32;
 }
 
+pub trait ConvertPoint<I: Space, O: Space> {
+    fn convert_point(&self, input: Point<I>) -> Point<O>;
+}
+
 impl<S: Space> Debug for Point<S>
 where
     S::Number: Debug,
@@ -39,10 +43,13 @@ where
 
 impl<S: Space> Clone for Point<S>
 where
-    S::Number: Copy,
+    S::Number: Clone,
 {
     fn clone(&self) -> Self {
-        *self
+        Self {
+            x: self.x.clone(),
+            y: self.y.clone(),
+        }
     }
 }
 

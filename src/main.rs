@@ -3,6 +3,7 @@ mod color_blend;
 mod color_hex;
 mod context;
 mod graphics;
+mod layout;
 mod maze;
 mod point;
 mod point_new;
