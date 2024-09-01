@@ -6,40 +6,45 @@ use sdl2::mouse::MouseButton;
 use sdl2::render::WindowCanvas;
 use sdl2::ttf::Sdl2TtfContext;
 
+use crate::context::Context;
 use crate::graphics::{FontLoadError, Graphics};
+use crate::layout::{Layout, LayoutConfig};
 use crate::maze::Maze;
 use crate::point::WindowPoint;
 use crate::stable_loop::StableLoop;
 use crate::ui::{ButtonId, Ui};
-use crate::Context;
-use crate::TARGET_FPS;
+use crate::{TARGET_FPS, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub struct App<'ttf> {
+    graphics: Graphics<'ttf>,
+    layout: Layout,
     rng: ThreadRng,
 
     maze: Maze,
     ui: Ui,
-    graphics: Graphics<'ttf>,
 }
 
 impl<'ttf> App<'ttf> {
     pub fn new(
         maze_width: i64,
         maze_height: i64,
+        layout_config: LayoutConfig,
         ttf_ctx: &'ttf Sdl2TtfContext,
         canvas: &WindowCanvas,
     ) -> Result<Self, FontLoadError> {
+        let graphics = Graphics::new(ttf_ctx, canvas)?;
+        let layout = Layout::new(layout_config);
         let rng = rand::thread_rng();
 
         let maze = Maze::new(maze_width, maze_height);
         let ui = Ui::new();
-        let graphics = Graphics::new(ttf_ctx, canvas)?;
 
         Ok(Self {
+            graphics,
+            layout,
             rng,
             maze,
             ui,
-            graphics,
         })
     }
 
@@ -111,6 +116,16 @@ impl<'ttf> StableLoop for App<'ttf> {
         }
 
         self.ui.update();
+
+        println!(
+            "{:?}",
+            self.layout.apply(
+                WINDOW_WIDTH as _,
+                WINDOW_HEIGHT as _,
+                self.maze.width() as _,
+                self.maze.height() as _
+            )
+        );
 
         true
     }

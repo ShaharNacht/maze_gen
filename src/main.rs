@@ -15,12 +15,20 @@ use sdl2::pixels::Color;
 use crate::app::App;
 use crate::color_hex::hex_rgb;
 use crate::context::Context;
+use crate::layout::LayoutConfig;
 use crate::stable_loop::StableLoop;
 
 const TARGET_FPS: f64 = 60.0;
 
 const MAZE_WIDTH: i64 = 16;
 const MAZE_HEIGHT: i64 = 16;
+
+const LAYOUT_CONFIG: LayoutConfig = LayoutConfig {
+    padding: 0.05,
+    maze_width: 1.0,
+    maze_height: 1.0,
+    maze_wall_thickness: 0.0,
+};
 
 const GFX_MAZE_X: i64 = 0;
 const GFX_MAZE_Y: i64 = 0;
@@ -69,7 +77,14 @@ fn main() {
         ttf_ctx_ref = Box::leak(Box::new(ttf_ctx));
     }
 
-    let mut app = App::new(MAZE_WIDTH, MAZE_HEIGHT, ttf_ctx_ref, ctx_ref.canvas()).unwrap();
+    let mut app = App::new(
+        MAZE_WIDTH,
+        MAZE_HEIGHT,
+        LAYOUT_CONFIG,
+        ttf_ctx_ref,
+        ctx_ref.canvas(),
+    )
+    .unwrap();
 
     app.main_loop(ctx_ref);
 }

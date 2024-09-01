@@ -1,113 +1,184 @@
 use sdl2::video::Window;
 
-use crate::maze::Maze;
-use crate::point_new::{ConvertPoint, Point};
+use crate::point_new::Point;
+
+#[derive(Clone, Copy)]
+pub struct LayoutConfig {
+    pub padding: f64,
+
+    pub maze_width: f64,
+    pub maze_height: f64,
+    pub maze_wall_thickness: f64,
+}
 
 pub struct Layout {
-    window_width: u32,
-    window_height: u32,
+    total_width: f64,
+    total_height: f64,
 
-    padding: u32,
+    padding: f64,
 
-    maze_layout: MazeLayout,
+    maze: MazeLayout,
 }
 
 impl Layout {
-    pub fn new(
-        padding: u32,
-        maze_width: u32,
-        maze_height: u32,
-        maze_cols: usize,
-        maze_rows: usize,
-    ) -> Self {
-        let window_width = maze_width + padding * 2;
-        let window_height = maze_height + padding * 2;
+    pub fn new(config: LayoutConfig) -> Self {
+        let LayoutConfig {
+            padding,
+            maze_width,
+            maze_height,
+            maze_wall_thickness,
+        } = config;
 
-        let maze_position = Point::new(padding as _, padding as _);
-        let maze_layout =
-            MazeLayout::new(maze_position, maze_width, maze_height, maze_cols, maze_rows);
+        let total_width = maze_width + padding * 2.0;
+        let total_height = maze_height + padding * 2.0; // + padding * 11.0
+
+        let maze = MazeLayout::new(
+            Point::new(padding, padding),
+            maze_width,
+            maze_height,
+            maze_wall_thickness,
+        );
 
         Self {
-            window_width,
-            window_height,
+            total_width,
+            total_height,
             padding,
-            maze_layout,
+            maze,
         }
     }
 
-    pub fn is_point_in_maze(&self, point: Point<Window>) -> bool {
-        self.maze_layout.is_point_inside(point)
+    pub fn apply(
+        &self,
+        window_width: u32,
+        window_height: u32,
+        maze_cols: usize,
+        maze_rows: usize,
+    ) -> WindowLayout {
+        WindowLayout::new(self, window_width, window_height, maze_cols, maze_rows)
     }
 }
 
-pub struct MazeLayout {
-    position: Point<Window>,
-    width: u32,
-    height: u32,
+#[derive(Debug)]
+pub struct WindowLayout {
+    pub maze: WindowMazeLayout,
+}
 
-    cols: usize,
-    rows: usize,
-    cell_width: u32,
-    cell_height: u32,
+impl WindowLayout {
+    fn new(
+        layout: &Layout,
+        window_width: u32,
+        window_height: u32,
+        maze_cols: usize,
+        maze_rows: usize,
+    ) -> Self {
+        let layout_aspect_ratio = layout.total_width / layout.total_height;
+        let window_aspect_ratio = window_width as f64 / window_height as f64;
+
+        let scale_factor;
+        let layout_window_x;
+        let layout_window_y;
+        let layout_window_width;
+        let layout_window_height;
+        if window_aspect_ratio >= layout_aspect_ratio {
+            layout_window_height = window_height as f64;
+            layout_window_width = layout_window_height * layout_aspect_ratio;
+
+            scale_factor = layout_window_height / layout.total_height;
+
+            layout_window_x = window_width as f64 / 2.0 - layout_window_width / 2.0;
+            layout_window_y = 0.0;
+        } else {
+            layout_window_width = window_width as f64;
+            layout_window_height = layout_window_width / layout_aspect_ratio;
+
+            scale_factor = layout_window_width / layout.total_width;
+
+            layout_window_x = 0.0;
+            layout_window_y = window_height as f64 / 2.0 - layout_window_height / 2.0;
+        }
+
+        let maze = WindowMazeLayout::new(
+            layout,
+            scale_factor,
+            layout_window_x,
+            layout_window_y,
+            layout_window_width,
+            layout_window_height,
+            maze_cols,
+            maze_rows,
+        );
+
+        Self { maze }
+    }
+}
+
+#[derive(Debug)]
+pub struct WindowMazeLayout {
+    pub position: Point<Window>,
+    pub width: u32,
+    pub height: u32,
+    pub wall_thickness: u32,
+
+    pub cell_x_positions: Vec<i32>,
+    pub cell_y_positions: Vec<i32>,
+}
+
+impl WindowMazeLayout {
+    fn new(
+        layout: &Layout,
+        scale_factor: f64,
+        layout_window_x: f64,
+        layout_window_y: f64,
+        layout_window_width: f64,
+        layout_window_height: f64,
+        cols: usize,
+        rows: usize,
+    ) -> Self {
+        let x =
+            layout_window_x + (layout.maze.position.x / layout.total_width * layout_window_width);
+        let y =
+            layout_window_y + (layout.maze.position.y / layout.total_height * layout_window_height);
+
+        let width = layout.maze.width / layout.total_width * layout_window_width;
+        let height = layout.maze.height / layout.total_height * layout_window_height;
+
+        let wall_thickness = layout.maze.wall_thickness * scale_factor;
+
+        let mut cell_x_positions = vec![];
+        for col in 0..=cols {
+            cell_x_positions.push((x + (col as f64 / cols as f64 * width)) as i32);
+        }
+
+        let mut cell_y_positions = vec![];
+        for row in 0..=rows {
+            cell_y_positions.push((y + (row as f64 / rows as f64 * height)) as i32);
+        }
+
+        Self {
+            position: Point::new(x as _, y as _),
+            width: width as _,
+            height: height as _,
+            wall_thickness: wall_thickness as _,
+            cell_x_positions,
+            cell_y_positions,
+        }
+    }
+}
+
+struct MazeLayout {
+    position: Point<Layout>,
+    width: f64,
+    height: f64,
+    wall_thickness: f64,
 }
 
 impl MazeLayout {
-    fn new(position: Point<Window>, width: u32, height: u32, cols: usize, rows: usize) -> Self {
-        let cell_width = width / cols as u32;
-        let cell_height = height / rows as u32;
-
+    fn new(position: Point<Layout>, width: f64, height: f64, wall_thickness: f64) -> Self {
         Self {
             position,
             width,
             height,
-            cols,
-            rows,
-            cell_width,
-            cell_height,
+            wall_thickness,
         }
-    }
-
-    fn is_point_inside(&self, point: Point<Window>) -> bool {
-        point.x >= self.position.x
-            && point.x < (self.position.x + self.width as i32)
-            && point.y >= self.position.y
-            && point.y < (self.position.y + self.height as i32)
-    }
-}
-
-impl ConvertPoint<Maze, Window> for Layout {
-    fn convert_point(&self, input: Point<Maze>) -> Point<Window> {
-        let MazeLayout {
-            position: maze_position,
-            cell_width,
-            cell_height,
-            ..
-        } = &self.maze_layout;
-
-        let x = maze_position.x + (input.x as i32 * *cell_width as i32);
-        let y = maze_position.y + (input.y as i32 * *cell_height as i32);
-
-        Point::new(x, y)
-    }
-}
-
-impl ConvertPoint<Window, Maze> for Layout {
-    fn convert_point(&self, input: Point<Window>) -> Point<Maze> {
-        let MazeLayout {
-            position: maze_position,
-            cols,
-            rows,
-            cell_width,
-            cell_height,
-            ..
-        } = &self.maze_layout;
-
-        let x = (input.x - maze_position.x) / *cell_width as i32;
-        let y = (input.y - maze_position.y) / *cell_height as i32;
-
-        let x = x.clamp(0, *cols as i32 - 1) as usize;
-        let y = y.clamp(0, *rows as i32 - 1) as usize;
-
-        Point::new(x, y)
     }
 }

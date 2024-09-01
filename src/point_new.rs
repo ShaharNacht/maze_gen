@@ -5,6 +5,7 @@ use std::ops::{Add, Div, Mul, Sub};
 use sdl2::rect::Point as SdlPoint;
 use sdl2::video::Window;
 
+use crate::layout::Layout;
 use crate::maze::Maze;
 
 pub struct Point<S: Space> {
@@ -26,6 +27,10 @@ impl Space for Maze {
 
 impl Space for Window {
     type Number = i32;
+}
+
+impl Space for Layout {
+    type Number = f64;
 }
 
 pub trait ConvertPoint<I: Space, O: Space> {
@@ -161,6 +166,14 @@ impl Mul<<Window as Space>::Number> for Point<Window> {
     }
 }
 
+impl Mul<<Layout as Space>::Number> for Point<Layout> {
+    type Output = Point<Layout>;
+
+    fn mul(self, rhs: <Layout as Space>::Number) -> Self::Output {
+        Self::new(self.x * rhs, self.y * rhs)
+    }
+}
+
 impl Div<<Maze as Space>::Number> for Point<Maze> {
     type Output = Point<Maze>;
 
@@ -173,6 +186,14 @@ impl Div<<Window as Space>::Number> for Point<Window> {
     type Output = Point<Window>;
 
     fn div(self, rhs: <Window as Space>::Number) -> Self::Output {
+        Self::new(self.x / rhs, self.y / rhs)
+    }
+}
+
+impl Div<<Layout as Space>::Number> for Point<Layout> {
+    type Output = Point<Layout>;
+
+    fn div(self, rhs: <Layout as Space>::Number) -> Self::Output {
         Self::new(self.x / rhs, self.y / rhs)
     }
 }
