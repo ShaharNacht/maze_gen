@@ -30,6 +30,7 @@ impl Context {
         let window = video_subsystem
             .window(window_title, window_width, window_height)
             .position_centered()
+            .resizable()
             .build()
             .map_err(InitError::Window)?;
 

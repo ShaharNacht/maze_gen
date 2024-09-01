@@ -1,5 +1,6 @@
 use sdl2::video::Window;
 
+use crate::maze::Maze;
 use crate::point_new::Point;
 
 #[derive(Clone, Copy)]
@@ -56,9 +57,12 @@ impl Layout {
     ) -> WindowLayout {
         WindowLayout::new(self, window_width, window_height, maze_cols, maze_rows)
     }
+
+    pub fn aspect_ratio(&self) -> f64 {
+        self.total_width / self.total_height
+    }
 }
 
-#[derive(Debug)]
 pub struct WindowLayout {
     pub maze: WindowMazeLayout,
 }
@@ -71,7 +75,7 @@ impl WindowLayout {
         maze_cols: usize,
         maze_rows: usize,
     ) -> Self {
-        let layout_aspect_ratio = layout.total_width / layout.total_height;
+        let layout_aspect_ratio = layout.aspect_ratio();
         let window_aspect_ratio = window_width as f64 / window_height as f64;
 
         let scale_factor;
@@ -112,7 +116,6 @@ impl WindowLayout {
     }
 }
 
-#[derive(Debug)]
 pub struct WindowMazeLayout {
     pub position: Point<Window>,
     pub width: u32,
@@ -162,6 +165,13 @@ impl WindowMazeLayout {
             cell_x_positions,
             cell_y_positions,
         }
+    }
+
+    pub fn cell_size(&self, cell: Point<Maze>) -> (u32, u32) {
+        let width = (self.cell_x_positions[cell.x + 1] - self.cell_x_positions[cell.x]) as u32;
+        let height = (self.cell_y_positions[cell.y + 1] - self.cell_y_positions[cell.y]) as u32;
+
+        (width, height)
     }
 }
 

@@ -109,7 +109,7 @@ impl Maze {
 /// and that the internal order of the cells doesn't depend on the provided order,
 /// so that equality checks and hashes don't depend the order.
 #[derive(PartialEq, Eq, Hash)]
-pub struct Wall(pub MazePoint, pub MazePoint);
+pub struct Wall(MazePoint, MazePoint);
 
 impl Wall {
     fn new(cell1: MazePoint, cell2: MazePoint) -> Result<Self, String> {
@@ -131,5 +131,13 @@ impl Wall {
 
             _ => unreachable!(),
         }
+    }
+
+    pub fn first_cell(&self) -> MazePoint {
+        self.0
+    }
+
+    pub fn second_cell(&self) -> MazePoint {
+        self.1
     }
 }

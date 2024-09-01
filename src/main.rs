@@ -15,6 +15,7 @@ use sdl2::pixels::Color;
 use crate::app::App;
 use crate::color_hex::hex_rgb;
 use crate::context::Context;
+use crate::layout::Layout;
 use crate::layout::LayoutConfig;
 use crate::stable_loop::StableLoop;
 
@@ -24,7 +25,8 @@ const MAZE_WIDTH: i64 = 16;
 const MAZE_HEIGHT: i64 = 16;
 
 const LAYOUT_CONFIG: LayoutConfig = LayoutConfig {
-    padding: 0.05,
+    padding: 0.015,
+
     maze_width: 1.0,
     maze_height: 1.0,
     maze_wall_thickness: 0.0,
@@ -58,6 +60,8 @@ const UI_BUTTON_CLICKED_COLOR: Color = hex_rgb(0x436187);
 const UI_BUTTON_TEXT_COLOR: Color = BACKGROUND_COLOR;
 
 fn main() {
+    let layout = Layout::new(LAYOUT_CONFIG);
+
     let (mut ctx, ttf_ctx) =
         Context::new("Maze Generator", WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32).unwrap();
 
@@ -80,7 +84,7 @@ fn main() {
     let mut app = App::new(
         MAZE_WIDTH,
         MAZE_HEIGHT,
-        LAYOUT_CONFIG,
+        layout,
         ttf_ctx_ref,
         ctx_ref.canvas(),
     )
