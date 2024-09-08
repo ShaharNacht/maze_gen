@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sdl2 = { version = "0.37.0", features = ["ttf"] }
+sdl2 = { version = "0.37.0", features = ["gfx", "ttf"] }
 rand = "0.8.5"
 
 [target.'cfg(target_os = "emscripten")'.dependencies]

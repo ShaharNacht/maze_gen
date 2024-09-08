@@ -1,13 +1,15 @@
 use std::error::Error;
 use std::fmt::{self, Display};
+use std::num::TryFromIntError;
 
+use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
 use sdl2::rect::{Point as SdlPoint, Rect};
 use sdl2::render::{
     Canvas, RenderTarget, Texture, TextureCreator, TextureQuery, TextureValueError, WindowCanvas,
 };
 use sdl2::ttf::{Font, FontError, Sdl2TtfContext};
-use sdl2::video::WindowContext;
+use sdl2::video::{Window, WindowContext};
 
 use crate::color_blend::ColorBlend;
 use crate::layout::{WindowLayout, WindowMazeLayout};
@@ -63,7 +65,25 @@ impl<'ttf> Graphics<'ttf> {
         layout: &WindowMazeLayout,
         maze: &Maze,
     ) -> Result<(), DrawError> {
+        self.draw_maze_background(canvas, layout, maze)?;
+
+        self.draw_maze_visited_cells(canvas, layout, maze)?;
+
+        self.draw_maze_walls(canvas, layout, maze)?;
+
+        self.draw_maze_cursor(canvas, layout, maze)?;
+
+        Ok(())
+    }
+
+    fn draw_maze_background(
+        &self,
+        canvas: &mut Canvas<impl RenderTarget>,
+        layout: &WindowMazeLayout,
+        maze: &Maze,
+    ) -> Result<(), DrawError> {
         canvas.set_draw_color(BACKGROUND_COLOR);
+
         Self::fill_rect(
             canvas,
             Rect::new(
@@ -72,9 +92,17 @@ impl<'ttf> Graphics<'ttf> {
                 layout.width,
                 layout.height,
             ),
-        )?;
+        )
+    }
 
+    fn draw_maze_visited_cells(
+        &self,
+        canvas: &mut Canvas<impl RenderTarget>,
+        layout: &WindowMazeLayout,
+        maze: &Maze,
+    ) -> Result<(), DrawError> {
         canvas.set_draw_color(VISITED_CELL_COLOR);
+
         for cell in maze.all_cells().filter(|&cell| maze.is_visited(cell)) {
             let cell_x = layout.cell_x_positions[cell.x as usize];
             let cell_y = layout.cell_y_positions[cell.y as usize];
@@ -84,7 +112,38 @@ impl<'ttf> Graphics<'ttf> {
             Self::fill_rect(canvas, Rect::new(cell_x, cell_y, cell_width, cell_height))?;
         }
 
-        canvas.set_draw_color(WALL_COLOR);
+        Ok(())
+    }
+
+    fn draw_maze_walls(
+        &self,
+        canvas: &mut Canvas<impl RenderTarget>,
+        layout: &WindowMazeLayout,
+        maze: &Maze,
+    ) -> Result<(), DrawError> {
+        let top_left = Point::new(layout.cell_x_positions[0], layout.cell_y_positions[0]);
+        let top_right = Point::new(
+            layout.cell_x_positions[maze.width() as usize],
+            layout.cell_y_positions[0],
+        );
+        let bottom_left = Point::new(
+            layout.cell_x_positions[0],
+            layout.cell_y_positions[maze.height() as usize],
+        );
+        let bottom_right = Point::new(
+            layout.cell_x_positions[maze.width() as usize],
+            layout.cell_y_positions[maze.height() as usize],
+        );
+
+        for (start, end) in [
+            (top_left, top_right),
+            (bottom_left, bottom_right),
+            (top_left, bottom_left),
+            (top_right, bottom_right),
+        ] {
+            Self::draw_line(canvas, start, end, layout.wall_thickness, WALL_COLOR)?;
+        }
+
         for wall in maze.walls() {
             let is_horizontal = wall.first_cell().x != wall.second_cell().x;
 
@@ -101,9 +160,24 @@ impl<'ttf> Graphics<'ttf> {
                 layout.cell_y_positions[p2_maze.y],
             );
 
-            Self::draw_line(canvas, p1_window, p2_window)?;
+            Self::draw_line(
+                canvas,
+                p1_window,
+                p2_window,
+                layout.wall_thickness,
+                WALL_COLOR,
+            )?;
         }
 
+        Ok(())
+    }
+
+    fn draw_maze_cursor(
+        &self,
+        canvas: &mut Canvas<impl RenderTarget>,
+        layout: &WindowMazeLayout,
+        maze: &Maze,
+    ) -> Result<(), DrawError> {
         if let Some(cursor) = maze.cursor() {
             let cell_x = layout.cell_x_positions[cursor.x as usize];
             let cell_y = layout.cell_y_positions[cursor.y as usize];
@@ -177,26 +251,6 @@ impl<'ttf> Graphics<'ttf> {
     //     Ok(())
     // }
 
-    fn cell_width(&self, maze: &Maze) -> i64 {
-        let p1 = MazePoint::new(0, 0);
-        let p2 = p1 + (1, 0);
-
-        let p1: WindowPoint = p1.convert(maze);
-        let p2: WindowPoint = p2.convert(maze);
-
-        (p2 - p1).x
-    }
-
-    fn cell_height(&self, maze: &Maze) -> i64 {
-        let p1 = MazePoint::new(0, 0);
-        let p2 = p1 + (0, 1);
-
-        let p1: WindowPoint = p1.convert(maze);
-        let p2: WindowPoint = p2.convert(maze);
-
-        (p2 - p1).y
-    }
-
     fn fill_rect(
         canvas: &mut Canvas<impl RenderTarget>,
         rect: impl Into<Option<Rect>>,
@@ -206,10 +260,47 @@ impl<'ttf> Graphics<'ttf> {
 
     fn draw_line(
         canvas: &mut Canvas<impl RenderTarget>,
-        start: impl Into<SdlPoint>,
-        end: impl Into<SdlPoint>,
+        start: impl Into<Point<Window>>,
+        end: impl Into<Point<Window>>,
+        thickness: u32,
+        color: impl Into<Color>,
     ) -> Result<(), DrawError> {
-        canvas.draw_line(start, end).map_err(DrawError::DrawLine)
+        let mut start = start.into();
+        let mut end = end.into();
+
+        let angle = (end.y as f64 - start.y as f64).atan2(end.x as f64 - start.x as f64);
+        let mut offset = Point::new(
+            (angle.cos() * (thickness as f64 / 2.0)) as i32,
+            (angle.sin() * (thickness as f64 / 2.0)) as i32,
+        );
+
+        start -= offset;
+
+        if offset.x != 0 {
+            offset.x -= 1;
+        }
+        if offset.y != 0 {
+            offset.y -= 1;
+        }
+
+        end += offset;
+
+        let thickness = thickness
+            .try_into()
+            .map_err(|e| DrawError::LineTooThick(thickness, e))?;
+
+        let color = color.into();
+
+        canvas
+            .thick_line(
+                start.x as i16,
+                start.y as i16,
+                end.x as i16,
+                end.y as i16,
+                thickness,
+                color,
+            )
+            .map_err(DrawError::DrawLine)
     }
 
     fn draw_texture(
@@ -267,6 +358,7 @@ impl From<String> for FontLoadError {
 pub enum DrawError {
     FillRect(String),
     DrawLine(String),
+    LineTooThick(u32, TryFromIntError),
     DrawTexture(String),
     FontRendering(FontError),
     SurfaceToTexture(TextureValueError),
@@ -275,6 +367,7 @@ pub enum DrawError {
 impl Error for DrawError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            Self::LineTooThick(_, e) => Some(e),
             Self::FontRendering(e) => Some(e),
             Self::SurfaceToTexture(e) => Some(e),
 
@@ -288,6 +381,11 @@ impl Display for DrawError {
         match self {
             Self::FillRect(e) => write!(f, "Failed to fill rect: {}", e),
             Self::DrawLine(e) => write!(f, "Failed to draw line: {}", e),
+            Self::LineTooThick(thickness, e) => write!(
+                f,
+                "Attempted to draw line with thickness of {}, but only up to 255 is supported ({})",
+                thickness, e
+            ),
             Self::DrawTexture(e) => write!(f, "Failed to draw texture: {}", e),
             Self::FontRendering(e) => write!(f, "Failed to render font: {}", e),
             Self::SurfaceToTexture(e) => write!(f, "Failed to convert surface to texture: {}", e),

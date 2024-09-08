@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug};
 use std::hash::Hash;
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 use sdl2::rect::Point as SdlPoint;
 use sdl2::video::Window;
@@ -147,6 +147,46 @@ impl<S: Space, T: Into<Point<S>>> Div<T> for Point<S> {
         let rhs = rhs.into();
 
         Self::new(self.x / rhs.x, self.y / rhs.y)
+    }
+}
+
+impl<S, T> AddAssign<T> for Point<S>
+where
+    Self: Add<T, Output = Self>,
+    S: Space,
+{
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
+    }
+}
+
+impl<S, T> SubAssign<T> for Point<S>
+where
+    Self: Sub<T, Output = Self>,
+    S: Space,
+{
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs;
+    }
+}
+
+impl<S, T> MulAssign<T> for Point<S>
+where
+    Self: Mul<T, Output = Self>,
+    S: Space,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        *self = *self * rhs;
+    }
+}
+
+impl<S, T> DivAssign<T> for Point<S>
+where
+    Self: Div<T, Output = Self>,
+    S: Space,
+{
+    fn div_assign(&mut self, rhs: T) {
+        *self = *self / rhs;
     }
 }
 

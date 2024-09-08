@@ -29,7 +29,7 @@ const LAYOUT_CONFIG: LayoutConfig = LayoutConfig {
 
     maze_width: 1.0,
     maze_height: 1.0,
-    maze_wall_thickness: 0.0,
+    maze_wall_thickness: 0.004,
 };
 
 const GFX_MAZE_X: i64 = 0;

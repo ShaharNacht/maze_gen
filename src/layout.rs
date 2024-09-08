@@ -31,7 +31,7 @@ impl Layout {
         } = config;
 
         let total_width = maze_width + padding * 2.0;
-        let total_height = maze_height + padding * 2.0; // + padding * 11.0
+        let total_height = maze_height + padding * 2.0;
 
         let maze = MazeLayout::new(
             Point::new(padding, padding),
@@ -145,23 +145,30 @@ impl WindowMazeLayout {
         let width = layout.maze.width / layout.total_width * layout_window_width;
         let height = layout.maze.height / layout.total_height * layout_window_height;
 
-        let wall_thickness = layout.maze.wall_thickness * scale_factor;
+        let wall_thickness = ((layout.maze.wall_thickness * scale_factor) as u32).max(1);
+
+        let x_with_wall = x + (wall_thickness / 2) as f64;
+        let y_with_wall = y + (wall_thickness / 2) as f64;
+        let width_with_wall = width - wall_thickness as f64;
+        let height_with_wall = height - wall_thickness as f64;
 
         let mut cell_x_positions = vec![];
         for col in 0..=cols {
-            cell_x_positions.push((x + (col as f64 / cols as f64 * width)) as i32);
+            cell_x_positions
+                .push((x_with_wall + (col as f64 / cols as f64 * width_with_wall)) as i32);
         }
 
         let mut cell_y_positions = vec![];
         for row in 0..=rows {
-            cell_y_positions.push((y + (row as f64 / rows as f64 * height)) as i32);
+            cell_y_positions
+                .push((y_with_wall + (row as f64 / rows as f64 * height_with_wall)) as i32);
         }
 
         Self {
             position: Point::new(x as _, y as _),
             width: width as _,
             height: height as _,
-            wall_thickness: wall_thickness as _,
+            wall_thickness,
             cell_x_positions,
             cell_y_positions,
         }
